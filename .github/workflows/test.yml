@@ -1,12 +1,11 @@
 name: Test
-
-on
+on:
   push:
     branches:
       - main
   pull_request:
     branches:
-      - main  
+      - main
 
 jobs:
   run-action:
@@ -14,21 +13,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
-      - name: Use Node.js 16
+      - name: Use Node.js 16.x
         uses: actions/setup-node@v2
         with:
           node-version: 16.x
           cache: 'npm'
           cache-dependency-path: package-lock.json
-        
+
       - name: Install dependencies
         run: npm ci
 
       - name: Build
         run: npm run build
 
-      - name: Run action
+      - name: Run my action
         uses: ./
-
