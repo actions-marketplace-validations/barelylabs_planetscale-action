@@ -2,6 +2,12 @@ name: 'Consonant vowel ratio'
 author: 'Adam Barito'
 description: 'Custom GH action with TypeScript'
 
+inputs:
+  name:
+    description: 'Name to greet'
+    required: false
+    default: 'World'
+
 runs:
   using: 'node16'
   main: 'dist/index.js'
