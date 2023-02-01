@@ -1,0 +1,7 @@
+name: 'Consonant vowel ratio'
+author: 'Adam Barito'
+description: 'Custom GH action with Typescript'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
