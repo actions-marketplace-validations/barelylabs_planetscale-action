@@ -1,5 +1,7 @@
 name: 'Create Planetscale Dev Branch'
-author: 'Adam Barito'
+
+author: 'barelylabs'
+
 description: 'Create Planetscale Dev Branch'
 
 inputs:
@@ -11,7 +13,7 @@ inputs:
   parent-branch:
     description: 'The parent branch to create a new dev branch from, or merge current dev branch into. Defaults to main.'
     required: false
-    type: string    
+    type: string
 
   branch-name:
     description: 'The name of the dev branch. Defaults to name of current git branch.'
@@ -21,7 +23,7 @@ inputs:
   overwrite-branch:
     description: 'Whether to overwrite an existing dev branch. Defaults to false.'
     required: false
-    type: boolean    
+    type: boolean
 
 runs:
   using: 'node16'

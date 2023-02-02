@@ -5,6 +5,8 @@ import axios from 'axios';
 import { error } from 'console';
 import { z } from 'zod';
 
+// INPUTS
+
 const planetscaleInputSchema = z.object({
 	orgName: z.string(),
 	dbName: z.string(),
@@ -21,7 +23,6 @@ const planetscaleInputSchema = z.object({
 	overwriteBranch: z.boolean().optional(),
 });
 
-// console.log('the env => ', process.env);
 console.log('context.eventName => ', context.eventName);
 
 let branchNameInput: string | undefined;
@@ -59,6 +60,8 @@ const {
 } = planetscaleInputs;
 
 console.log('planetscaleInputs => ', planetscaleInputs);
+
+// API SCHEMA
 
 const planetscaleBranchSchema = z.object({
 	id: z.string(),
@@ -327,7 +330,7 @@ const headers = {
 	Authorization: `${serviceTokenId}:${serviceToken}`,
 };
 
-// API FUNCTIONS
+// API ENDPOINTS
 
 async function getBranch() {
 	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
@@ -346,8 +349,9 @@ async function getBranch() {
 			}
 			throw new Error(err.response.data.message);
 		});
-
-	return planetscaleBranchSchema.nullish().parse(existingBranchData);
+	const parsedBranchData = planetscaleBranchSchema.nullable().parse(existingBranchData);
+	console.log('parsedBranchData => ', parsedBranchData);
+	return parsedBranchData;
 }
 
 async function createBranch() {
@@ -378,25 +382,6 @@ async function getBranchStatus() {
 			throw new Error(err.response.data.message);
 		});
 	return planetscaleBranchStatusResponseSchema.parse(branchStatus);
-}
-
-async function waitForBranchToBeReady() {
-	let timeout = 300000;
-	let backoff = 1000;
-	let start = Date.now();
-
-	while (Date.now() - start < timeout) {
-		const branchStatus = await getBranchStatus();
-
-		if (branchStatus.ready) {
-			console.log('branch is ready!');
-			return branchStatus;
-		}
-		console.log('branch is not ready yet, waiting...');
-		await new Promise(resolve => setTimeout(resolve, backoff));
-		backoff = backoff * 2;
-	}
-	throw new Error('Branch failed to be ready');
 }
 
 async function createConnectionString() {
@@ -458,6 +443,38 @@ async function getDeployRequestStatus(deployRequestNumber: number) {
 	return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
 }
 
+async function deleteBranch() {
+	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
+	const options = { method: 'DELETE', url, headers };
+
+	return axios
+		.request(options)
+		.then(res => console.log('branch successfully deleted'))
+		.catch(err => {
+			throw new Error(err.response.data.message);
+		});
+}
+
+// WAITS
+async function waitForBranchToBeReady() {
+	let timeout = 300000;
+	let backoff = 1000;
+	let start = Date.now();
+
+	while (Date.now() - start < timeout) {
+		const branchStatus = await getBranchStatus();
+
+		if (branchStatus.ready) {
+			console.log('branch is ready!');
+			return branchStatus;
+		}
+		console.log('branch is not ready yet, waiting...');
+		await new Promise(resolve => setTimeout(resolve, backoff));
+		backoff = backoff * 2;
+	}
+	throw new Error('Branch failed to be ready');
+}
+
 async function waitForDeployRequestToComplete(deployRequestNumber: number) {
 	const start = Date.now();
 	const timeout = 300000;
@@ -478,19 +495,8 @@ async function waitForDeployRequestToComplete(deployRequestNumber: number) {
 	throw new Error(`Deploy request failed to complete within ${timeout / 1000} seconds.`);
 }
 
-async function deleteBranch() {
-	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
-	const options = { method: 'DELETE', url, headers };
+// GITHUB ACTIONS (COMBINED ENDPOINTS)
 
-	return axios
-		.request(options)
-		.then(res => console.log('branch successfully deleted'))
-		.catch(err => {
-			throw new Error(err.response.data.message);
-		});
-}
-
-// COMBINED FUNCTIONS
 async function createBranchAndConnectionString() {
 	const branch = await getBranch();
 

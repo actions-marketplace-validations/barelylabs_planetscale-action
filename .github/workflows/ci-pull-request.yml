@@ -10,24 +10,26 @@ jobs:
   create-db-branch:
     name: Create Planetscale Dev Branch
     runs-on: ubuntu-latest
+
     outputs:
       branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
       connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
+      # - name: Use Node.js 16.x
+      #   uses: actions/setup-node@v3
+      #   with:
+      #     node-version: 16.x
+      #     cache: 'npm'
+      #     cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      # - name: Install dependencies
+      #   run: npm ci
 
-      - name: Build
-        run: npm run build
+      # - name: Build
+      #   run: npm run build
 
       - name: Create db branch
         id: create-db-branch

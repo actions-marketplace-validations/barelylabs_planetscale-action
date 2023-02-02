@@ -1,0 +1,19 @@
+name: New Dev Branch
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  create-db-branch:
+    name: Create Planetscale Dev Branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.ref_type == 'created' }}
+
+    outputs:
+      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
+    
+
