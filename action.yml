@@ -16,7 +16,12 @@ inputs:
   branch-name:
     description: 'The name of the dev branch. Defaults to name of current git branch.'
     required: false
-    type: string    
+    type: string
+
+  overwrite-branch:
+    description: 'Whether to overwrite an existing dev branch. Defaults to false.'
+    required: false
+    type: boolean    
 
 runs:
   using: 'node16'
