@@ -9,6 +9,6 @@
 		"outDir": "dist" /* Redirect output structure to the directory. */,
 		"lib": ["esnext"]
 	},
-	"references": [{ "path": "./tsconfig.build.json" }, { "path": "./tsconfig/spec.json" }],
+	"references": [{ "path": "./tsconfig.build.json" }],
 	"exclude": ["node_modules"]
 }

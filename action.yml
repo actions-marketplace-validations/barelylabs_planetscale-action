@@ -1,12 +1,24 @@
-name: 'Consonant vowel ratio'
+name: 'Create Planetscale Dev Branch'
 author: 'Adam Barito'
-description: 'Custom GH action with TypeScript'
+description: 'Create Planetscale Dev Branch'
 
 inputs:
-  name:
-    description: 'Name to greet'
+  action:
+    description: "accepts 'create', 'deploy', or 'delete'"
+    type: string
+    required: true
+
+  parent-branch:
+    description: 'The parent branch to create a new dev branch from, or merge current dev branch into.'
     required: false
-    default: 'World'
+    type: string
+    default: main
+
+  branch-name:
+    description: 'The name of the dev branch'
+    required: false
+    type: string
+    default: ${{ github.ref_name }}
 
 runs:
   using: 'node16'
