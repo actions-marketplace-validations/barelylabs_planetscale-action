@@ -21,7 +21,7 @@ const planetscaleInputSchema = z.object({
 	overwriteBranch: z.boolean().optional(),
 });
 
-console.log('the env => ', process.env);
+// console.log('the env => ', process.env);
 console.log('context.eventName => ', context.eventName);
 
 let branchNameInput: string | undefined;
@@ -326,7 +326,10 @@ async function getBranch() {
 
 	const existingBranchData = await axios
 		.request(options)
-		.then(res => res.data)
+		.then(res => {
+			console.log('getBranchData => ', res.data);
+			return res.data;
+		})
 		.catch(err => {
 			if (err.response.status === 404) {
 				console.log('that branch does not exist.');

@@ -39,3 +39,4 @@ jobs:
           PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
         with:
           action: 'create'
+          overwrite-branch: true

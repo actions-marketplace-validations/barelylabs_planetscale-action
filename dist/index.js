@@ -2,10 +2,12 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@actions/core");
 const github_1 = require("@actions/github");
 const axios_1 = __importDefault(require("axios"));
+const console_1 = require("console");
 const zod_1 = require("zod");
 const planetscaleInputSchema = zod_1.z.object({
     orgName: zod_1.z.string(),
@@ -14,18 +16,34 @@ const planetscaleInputSchema = zod_1.z.object({
     serviceToken: zod_1.z.string(),
     action: zod_1.z.enum(['create', 'deploy', 'delete']),
     parentBranchName: zod_1.z.string(),
-    branchName: zod_1.z.string(),
+    branchName: zod_1.z
+        .string()
+        .transform(str => str.replace(/[^a-zA-Z0-9-]/g, ''))
+        .refine(str => str.length > 1),
+    overwriteBranch: zod_1.z.boolean().optional(),
 });
-console.log('the fucking env => ', process.env);
-const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action } = planetscaleInputSchema.parse({
+// console.log('the env => ', process.env);
+console.log('context.eventName => ', github_1.context.eventName);
+let branchNameInput;
+if (github_1.context.eventName === 'pull_request') {
+    branchNameInput = (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.head.ref;
+    console.log('branchNameInput for pull request => ', branchNameInput);
+}
+if (github_1.context.eventName === 'push') {
+    branchNameInput = github_1.context.payload.ref;
+    console.log('branchNameInput for push => ', branchNameInput);
+}
+const planetscaleInputs = planetscaleInputSchema.parse({
     orgName: process.env.PLANETSCALE_ORG_NAME,
     dbName: (0, core_1.getInput)('dbName') || process.env.PLANETSCALE_DB_NAME,
     serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
     serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
     action: (0, core_1.getInput)('action'),
     parentBranchName: (0, core_1.getInput)('parentBranchName') || 'main',
-    branchName: (0, core_1.getInput)('branchName') || github_1.context.ref.replace('refs/heads/', ''),
+    branchName: (0, core_1.getInput)('branchName') || branchNameInput,
 });
+const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action, overwriteBranch, } = planetscaleInputs;
+console.log('planetscaleInputs => ', planetscaleInputs);
 const planetscaleBranchSchema = zod_1.z.object({
     id: zod_1.z.string(),
     name: zod_1.z.string(),
@@ -274,18 +292,47 @@ const headers = {
     'content-type': 'application/json',
     Authorization: `${serviceTokenId}:${serviceToken}`,
 };
+// API FUNCTIONS
+async function getBranch() {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
+    const options = { url, headers };
+    const existingBranchData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        if (err.response.status === 404) {
+            console.log('that branch does not exist.');
+            return null;
+        }
+        throw err;
+    });
+    return planetscaleBranchSchema.parse(existingBranchData);
+}
 async function createBranch() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches`;
     const data = { name: branchName, parent_branch: parentBranchName };
     const options = { method: 'POST', url, headers, data };
-    const newBranchRes = await axios_1.default.request(options);
-    return planetscaleBranchSchema.parse(newBranchRes.data);
+    const newBranchData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw err;
+    });
+    return planetscaleBranchSchema.parse(newBranchData);
 }
 async function getBranchStatus() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
     const options = { method: 'GET', url, headers };
-    const branchStatusRes = await axios_1.default.request(options);
-    return planetscaleBranchStatusResponseSchema.parse(branchStatusRes.data);
+    const branchStatus = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        if (err.response.status === 404) {
+            throw (0, console_1.error)('that branch does not exist.');
+        }
+        throw err;
+    });
+    return planetscaleBranchStatusResponseSchema.parse(branchStatus);
 }
 async function waitForBranchToBeReady() {
     let timeout = 300000;
@@ -305,52 +352,84 @@ async function createConnectionString() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}/passwords`;
     const data = { role: 'readwriter' };
     const options = { method: 'POST', url, headers, data };
-    const planetscalePasswordResponse = await axios_1.default.request(options);
-    const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordResponse.data);
+    const planetscalePasswordData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw err;
+    });
+    const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
     return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
 }
 async function createDeployRequest() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
     const data = { branch: branchName, into_branch: parentBranchName };
     const options = { method: 'POST', url, headers, data };
-    const deployRequestRes = await axios_1.default.request(options);
-    const deployRequestData = planetscaleCreateDeployRequestResponseSchema.parse(deployRequestRes.data);
-    return deployRequestData.number;
+    const deployRequestData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw err;
+    });
+    return planetscaleCreateDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 async function queueDeployRequest(deployRequestNumber) {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}/deploy`;
     const options = { method: 'POST', url, headers };
-    const deployRequestRes = await axios_1.default.request(options);
-    const deployRequestData = planetscaleQueueDeployRequestResponseSchema.parse(deployRequestRes.data);
-    return deployRequestData.number;
+    const deployRequestData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw err;
+    });
+    return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 async function getDeployRequestStatus(deployRequestNumber) {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
     const options = { method: 'GET', url, headers };
-    const deployRequestRes = await axios_1.default.request(options);
-    const deployRequestData = planetscaleQueueDeployRequestResponseSchema.parse(deployRequestRes.data);
-    return deployRequestData.deployment_state;
+    const deployRequestData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw err;
+    });
+    return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
 }
 async function waitForDeployRequestToComplete(deployRequestNumber) {
-    let timeout = 300000;
+    const start = Date.now();
+    const timeout = 300000;
     let backoff = 1000;
-    let start = Date.now();
     while (Date.now() - start < timeout) {
         const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'complete' ||
             deployRequestStatus === 'complete_pending_revert') {
-            return;
+            return 'complete';
         }
         await new Promise(resolve => setTimeout(resolve, backoff));
         backoff = backoff * 2;
     }
-    throw new Error('Deploy request failed to complete');
+    throw new Error(`Deploy request failed to complete within ${timeout / 1000} seconds.`);
 }
-// THREE ACTIONS TO CHOOSE FROM
+async function deleteBranch() {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
+    const options = { method: 'DELETE', url, headers };
+    return axios_1.default
+        .request(options)
+        .then(res => console.log('branch successfully deleted'))
+        .catch(err => {
+        throw err;
+    });
+}
+// COMBINED FUNCTIONS
 async function createBranchAndConnectionString() {
-    const newBranch = await createBranch();
-    console.log('new branch => ', newBranch);
+    const branch = await getBranch();
+    if (branch && overwriteBranch)
+        await deleteBranch();
+    if (!branch || overwriteBranch) {
+        const newBranch = await createBranch();
+        console.log('new branch => ', newBranch);
+    }
     const branchStatus = await waitForBranchToBeReady();
     console.log('branchStatus => ', branchStatus);
     const connectionString = await createConnectionString();
@@ -367,15 +446,6 @@ async function createDeployRequestAndQueue() {
     await waitForDeployRequestToComplete(queuedDeployRequestNumber);
     console.log('deploy request complete');
     return queuedDeployRequestNumber;
-}
-async function deleteBranch() {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
-    const options = { method: 'DELETE', url, headers };
-    const deleteBranchRes = await axios_1.default.request(options);
-    if (deleteBranchRes.status !== 204) {
-        throw new Error('Branch delete failed');
-    }
-    return console.log('branch successfully deleted');
 }
 // RUN THE ACTION
 if (action === 'create')
