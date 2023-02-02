@@ -313,9 +313,9 @@ async function getBranch() {
             console.log('that branch does not exist.');
             return null;
         }
-        throw err;
+        throw new Error(err.response.data.message);
     });
-    return planetscaleBranchSchema.parse(existingBranchData);
+    return planetscaleBranchSchema.nullable().parse(existingBranchData);
 }
 async function createBranch() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches`;
@@ -325,7 +325,7 @@ async function createBranch() {
         .request(options)
         .then(res => res.data)
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
     return planetscaleBranchSchema.parse(newBranchData);
 }
@@ -339,7 +339,7 @@ async function getBranchStatus() {
         if (err.response.status === 404) {
             throw (0, console_1.error)('that branch does not exist.');
         }
-        throw err;
+        throw new Error(err.response.data.message);
     });
     return planetscaleBranchStatusResponseSchema.parse(branchStatus);
 }
@@ -350,8 +350,10 @@ async function waitForBranchToBeReady() {
     while (Date.now() - start < timeout) {
         const branchStatus = await getBranchStatus();
         if (branchStatus.ready) {
+            console.log('branch is ready!');
             return branchStatus;
         }
+        console.log('branch is not ready yet, waiting...');
         await new Promise(resolve => setTimeout(resolve, backoff));
         backoff = backoff * 2;
     }
@@ -365,7 +367,7 @@ async function createConnectionString() {
         .request(options)
         .then(res => res.data)
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
     const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
     return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
@@ -378,7 +380,7 @@ async function createDeployRequest() {
         .request(options)
         .then(res => res.data)
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
     return planetscaleCreateDeployRequestResponseSchema.parse(deployRequestData).number;
 }
@@ -389,7 +391,7 @@ async function queueDeployRequest(deployRequestNumber) {
         .request(options)
         .then(res => res.data)
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
     return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).number;
 }
@@ -400,7 +402,7 @@ async function getDeployRequestStatus(deployRequestNumber) {
         .request(options)
         .then(res => res.data)
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
     return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
 }
@@ -427,7 +429,7 @@ async function deleteBranch() {
         .request(options)
         .then(res => console.log('branch successfully deleted'))
         .catch(err => {
-        throw err;
+        throw new Error(err.response.data.message);
     });
 }
 // COMBINED FUNCTIONS

@@ -65,12 +65,12 @@ const planetscaleBranchSchema = z.object({
 	name: z.string(),
 	created_at: z.string(),
 	updated_at: z.string(),
-	restore_checklist_completed_at: z.string().nullish(),
+	restore_checklist_completed_at: z.string().nullable(),
 	access_host_url: z.string(),
 	schema_last_updated_at: z.string(),
 	mysql_address: z.string(),
 	mysql_edge_address: z.string(),
-	initial_restore_id: z.string().nullish(),
+	initial_restore_id: z.string().nullable(),
 	ready: z.boolean(),
 	production: z.boolean(),
 	sharded: z.boolean(),
@@ -81,7 +81,7 @@ const planetscaleBranchSchema = z.object({
 			display_name: z.string(),
 			avatar_url: z.string(),
 		})
-		.nullish(),
+		.nullable(),
 	restored_from_branch: z
 		.object({
 			id: z.string(),
@@ -90,7 +90,7 @@ const planetscaleBranchSchema = z.object({
 			updated_at: z.string(),
 			deleted_at: z.string(),
 		})
-		.nullish(),
+		.nullable(),
 	html_url: z.string(),
 	planetscale_region: z
 		.object({
@@ -102,7 +102,7 @@ const planetscaleBranchSchema = z.object({
 			location: z.string(),
 			slug: z.string(),
 		})
-		.nullish(),
+		.nullable(),
 	parent_branch: z.string(),
 	multiple_admins_required_for_demotion: z.boolean(),
 });
@@ -120,23 +120,25 @@ const planetscaleBranchPasswordResponseSchema = z.object({
 	display_name: z.string(),
 	role: z.string(),
 	created_at: z.string(),
-	deleted_at: z.string(),
-	expires_at: z.string(),
-	ttl_seconds: z.number(),
+	deleted_at: z.string().nullable(),
+	expires_at: z.string().nullable(),
+	ttl_seconds: z.number().nullable(),
 	actor: z.object({
 		id: z.string(),
 		display_name: z.string(),
 		avatar_url: z.string(),
 	}),
-	region: z.object({
-		id: z.string(),
-		provider: z.string(),
-		enabled: z.string(),
-		public_ip_addresses: z.array(z.string()),
-		display_name: z.string(),
-		location: z.string(),
-		slug: z.string(),
-	}),
+	region: z
+		.object({
+			id: z.string(),
+			provider: z.string(),
+			enabled: z.string().nullable(),
+			public_ip_addresses: z.array(z.string()),
+			display_name: z.string(),
+			location: z.string(),
+			slug: z.string(),
+		})
+		.nullable(),
 	username: z.string(),
 	renewable: z.boolean(),
 	database_branch: z.object({
@@ -148,11 +150,13 @@ const planetscaleBranchPasswordResponseSchema = z.object({
 	integrations: z.array(
 		z.object({
 			name: z.string(),
-			type: z.string(),
-			content: z.object({
-				plain: z.string(),
-				highlighted: z.string(),
-			}),
+			type: z.string().nullish(),
+			content: z
+				.object({
+					plain: z.string(),
+					highlighted: z.string(),
+				})
+				.nullish(),
 		})
 	),
 	plain_text: z.string(),
@@ -341,7 +345,7 @@ async function getBranch() {
 				console.log('that branch does not exist.');
 				return null;
 			}
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 
 	return planetscaleBranchSchema.nullable().parse(existingBranchData);
@@ -356,7 +360,7 @@ async function createBranch() {
 		.request(options)
 		.then(res => res.data)
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 	return planetscaleBranchSchema.parse(newBranchData);
 }
@@ -372,7 +376,7 @@ async function getBranchStatus() {
 			if (err.response.status === 404) {
 				throw error('that branch does not exist.');
 			}
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 	return planetscaleBranchStatusResponseSchema.parse(branchStatus);
 }
@@ -384,9 +388,12 @@ async function waitForBranchToBeReady() {
 
 	while (Date.now() - start < timeout) {
 		const branchStatus = await getBranchStatus();
+
 		if (branchStatus.ready) {
+			console.log('branch is ready!');
 			return branchStatus;
 		}
+		console.log('branch is not ready yet, waiting...');
 		await new Promise(resolve => setTimeout(resolve, backoff));
 		backoff = backoff * 2;
 	}
@@ -402,7 +409,7 @@ async function createConnectionString() {
 		.request(options)
 		.then(res => res.data)
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 	const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
 
@@ -418,7 +425,7 @@ async function createDeployRequest() {
 		.request(options)
 		.then(res => res.data)
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 
 	return planetscaleCreateDeployRequestResponseSchema.parse(deployRequestData).number;
@@ -432,7 +439,7 @@ async function queueDeployRequest(deployRequestNumber: number) {
 		.request(options)
 		.then(res => res.data)
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 
 	return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).number;
@@ -446,7 +453,7 @@ async function getDeployRequestStatus(deployRequestNumber: number) {
 		.request(options)
 		.then(res => res.data)
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 
 	return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
@@ -480,7 +487,7 @@ async function deleteBranch() {
 		.request(options)
 		.then(res => console.log('branch successfully deleted'))
 		.catch(err => {
-			throw err;
+			throw new Error(err.response.data.message);
 		});
 }
 
