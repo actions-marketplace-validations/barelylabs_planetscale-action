@@ -29,7 +29,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Run my action
+      - name: Create db branch
         id: create-db-branch
         uses: ./
         env:
