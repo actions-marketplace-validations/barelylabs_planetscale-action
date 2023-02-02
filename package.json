@@ -1,8 +1,9 @@
 {
 	"name": "@barely/planetscale-action",
-	"version": "0.0.0",
-	"description": "",
+	"version": "0.1.0",
+	"description": "actions for planetscale branches",
 	"main": "dist/index.js",
+	
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json"
 	},
