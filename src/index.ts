@@ -16,7 +16,7 @@ const planetscaleInputSchema = z.object({
 	parentBranchName: z.string(),
 	branchName: z
 		.string()
-		.transform(str => str.replace(/[^a-zA-Z0-9-]/g, ''))
+		.transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
 		.refine(str => str.length > 1),
 	overwriteBranch: z.boolean().optional(),
 });
@@ -65,38 +65,44 @@ const planetscaleBranchSchema = z.object({
 	name: z.string(),
 	created_at: z.string(),
 	updated_at: z.string(),
-	restore_checklist_completed_at: z.string(),
+	restore_checklist_completed_at: z.string().nullish(),
 	access_host_url: z.string(),
 	schema_last_updated_at: z.string(),
 	mysql_address: z.string(),
 	mysql_edge_address: z.string(),
-	initial_restore_id: z.string(),
+	initial_restore_id: z.string().nullish(),
 	ready: z.boolean(),
 	production: z.boolean(),
 	sharded: z.boolean(),
 	shard_count: z.number(),
-	api_actor: z.object({
-		id: z.string(),
-		display_name: z.string(),
-		avatar_url: z.string(),
-	}),
-	restored_from_branch: z.object({
-		id: z.string(),
-		name: z.string(),
-		created_at: z.string(),
-		updated_at: z.string(),
-		deleted_at: z.string(),
-	}),
+	api_actor: z
+		.object({
+			id: z.string(),
+			display_name: z.string(),
+			avatar_url: z.string(),
+		})
+		.nullish(),
+	restored_from_branch: z
+		.object({
+			id: z.string(),
+			name: z.string(),
+			created_at: z.string(),
+			updated_at: z.string(),
+			deleted_at: z.string(),
+		})
+		.nullish(),
 	html_url: z.string(),
-	planetscale_region: z.object({
-		id: z.string(),
-		provider: z.string(),
-		enabled: z.string(),
-		public_ip_addresses: z.array(z.string()),
-		display_name: z.string(),
-		location: z.string(),
-		slug: z.string(),
-	}),
+	planetscale_region: z
+		.object({
+			id: z.string(),
+			provider: z.string(),
+			enabled: z.string(),
+			public_ip_addresses: z.array(z.string()),
+			display_name: z.string(),
+			location: z.string(),
+			slug: z.string(),
+		})
+		.nullish(),
 	parent_branch: z.string(),
 	multiple_admins_required_for_demotion: z.boolean(),
 });
