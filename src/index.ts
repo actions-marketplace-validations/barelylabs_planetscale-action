@@ -65,12 +65,12 @@ const planetscaleBranchSchema = z.object({
 	name: z.string(),
 	created_at: z.string(),
 	updated_at: z.string(),
-	restore_checklist_completed_at: z.string().nullable(),
+	restore_checklist_completed_at: z.string().nullish(),
 	access_host_url: z.string(),
 	schema_last_updated_at: z.string(),
 	mysql_address: z.string(),
 	mysql_edge_address: z.string(),
-	initial_restore_id: z.string().nullable(),
+	initial_restore_id: z.string().nullish(),
 	ready: z.boolean(),
 	production: z.boolean(),
 	sharded: z.boolean(),
@@ -81,7 +81,7 @@ const planetscaleBranchSchema = z.object({
 			display_name: z.string(),
 			avatar_url: z.string(),
 		})
-		.nullable(),
+		.nullish(),
 	restored_from_branch: z
 		.object({
 			id: z.string(),
@@ -90,7 +90,7 @@ const planetscaleBranchSchema = z.object({
 			updated_at: z.string(),
 			deleted_at: z.string(),
 		})
-		.nullable(),
+		.nullish(),
 	html_url: z.string(),
 	planetscale_region: z
 		.object({
@@ -102,7 +102,7 @@ const planetscaleBranchSchema = z.object({
 			location: z.string(),
 			slug: z.string(),
 		})
-		.nullable(),
+		.nullish(),
 	parent_branch: z.string(),
 	multiple_admins_required_for_demotion: z.boolean(),
 });
@@ -120,9 +120,9 @@ const planetscaleBranchPasswordResponseSchema = z.object({
 	display_name: z.string(),
 	role: z.string(),
 	created_at: z.string(),
-	deleted_at: z.string().nullable(),
-	expires_at: z.string().nullable(),
-	ttl_seconds: z.number().nullable(),
+	deleted_at: z.string().nullish(),
+	expires_at: z.string().nullish(),
+	ttl_seconds: z.number().nullish(),
 	actor: z.object({
 		id: z.string(),
 		display_name: z.string(),
@@ -132,13 +132,13 @@ const planetscaleBranchPasswordResponseSchema = z.object({
 		.object({
 			id: z.string(),
 			provider: z.string(),
-			enabled: z.string().nullable(),
+			enabled: z.string().nullish(),
 			public_ip_addresses: z.array(z.string()),
 			display_name: z.string(),
 			location: z.string(),
 			slug: z.string(),
 		})
-		.nullable(),
+		.nullish(),
 	username: z.string(),
 	renewable: z.boolean(),
 	database_branch: z.object({
@@ -348,7 +348,7 @@ async function getBranch() {
 			throw new Error(err.response.data.message);
 		});
 
-	return planetscaleBranchSchema.nullable().parse(existingBranchData);
+	return planetscaleBranchSchema.nullish().parse(existingBranchData);
 }
 
 async function createBranch() {
