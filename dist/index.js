@@ -18,7 +18,7 @@ const planetscaleInputSchema = zod_1.z.object({
     parentBranchName: zod_1.z.string(),
     branchName: zod_1.z
         .string()
-        .transform(str => str.replace(/[^a-zA-Z0-9-]/g, ''))
+        .transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
         .refine(str => str.length > 1),
     overwriteBranch: zod_1.z.boolean().optional(),
 });
@@ -49,30 +49,35 @@ const planetscaleBranchSchema = zod_1.z.object({
     name: zod_1.z.string(),
     created_at: zod_1.z.string(),
     updated_at: zod_1.z.string(),
-    restore_checklist_completed_at: zod_1.z.string(),
+    restore_checklist_completed_at: zod_1.z.string().nullish(),
     access_host_url: zod_1.z.string(),
     schema_last_updated_at: zod_1.z.string(),
     mysql_address: zod_1.z.string(),
     mysql_edge_address: zod_1.z.string(),
-    initial_restore_id: zod_1.z.string(),
+    initial_restore_id: zod_1.z.string().nullish(),
     ready: zod_1.z.boolean(),
     production: zod_1.z.boolean(),
     sharded: zod_1.z.boolean(),
     shard_count: zod_1.z.number(),
-    api_actor: zod_1.z.object({
+    api_actor: zod_1.z
+        .object({
         id: zod_1.z.string(),
         display_name: zod_1.z.string(),
         avatar_url: zod_1.z.string(),
-    }),
-    restored_from_branch: zod_1.z.object({
+    })
+        .nullish(),
+    restored_from_branch: zod_1.z
+        .object({
         id: zod_1.z.string(),
         name: zod_1.z.string(),
         created_at: zod_1.z.string(),
         updated_at: zod_1.z.string(),
         deleted_at: zod_1.z.string(),
-    }),
+    })
+        .nullish(),
     html_url: zod_1.z.string(),
-    planetscale_region: zod_1.z.object({
+    planetscale_region: zod_1.z
+        .object({
         id: zod_1.z.string(),
         provider: zod_1.z.string(),
         enabled: zod_1.z.string(),
@@ -80,7 +85,8 @@ const planetscaleBranchSchema = zod_1.z.object({
         display_name: zod_1.z.string(),
         location: zod_1.z.string(),
         slug: zod_1.z.string(),
-    }),
+    })
+        .nullish(),
     parent_branch: zod_1.z.string(),
     multiple_admins_required_for_demotion: zod_1.z.boolean(),
 });
@@ -298,7 +304,10 @@ async function getBranch() {
     const options = { url, headers };
     const existingBranchData = await axios_1.default
         .request(options)
-        .then(res => res.data)
+        .then(res => {
+        console.log('getBranchData => ', res.data);
+        return res.data;
+    })
         .catch(err => {
         if (err.response.status === 404) {
             console.log('that branch does not exist.');

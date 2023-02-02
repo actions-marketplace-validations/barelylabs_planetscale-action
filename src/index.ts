@@ -344,7 +344,7 @@ async function getBranch() {
 			throw err;
 		});
 
-	return planetscaleBranchSchema.parse(existingBranchData);
+	return planetscaleBranchSchema.nullable().parse(existingBranchData);
 }
 
 async function createBranch() {
