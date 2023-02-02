@@ -7,8 +7,9 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
 		"outDir": "dist" /* Redirect output structure to the directory. */,
+		"rootDir": "src" /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */,
 		"lib": ["esnext"]
 	},
-	"references": [{ "path": "./tsconfig.build.json" }, { "path": "./tsconfig/spec.json" }],
+	"references": [{ "path": "./tsconfig.build.json" }],
 	"exclude": ["node_modules"]
 }

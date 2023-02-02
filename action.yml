@@ -1,12 +1,29 @@
-name: 'Consonant vowel ratio'
-author: 'Adam Barito'
-description: 'Custom GH action with TypeScript'
+name: 'Planetscale Branch Action'
+
+author: 'barelylabs'
+
+description: 'Create, deploy, or delete a Planetscale branch.'
 
 inputs:
-  name:
-    description: 'Name to greet'
+  action:
+    description: "accepts 'create', 'deploy', or 'delete'"
+    type: string
+    required: true
+
+  parent-branch:
+    description: 'The parent branch to create a new dev branch from, or merge current dev branch into. Defaults to main.'
     required: false
-    default: 'World'
+    type: string
+
+  branch-name:
+    description: 'The name of the dev branch. Defaults to name of current git branch.'
+    required: false
+    type: string
+
+  overwrite-branch:
+    description: 'Whether to overwrite an existing dev branch. Defaults to false.'
+    required: false
+    type: boolean
 
 runs:
   using: 'node16'
