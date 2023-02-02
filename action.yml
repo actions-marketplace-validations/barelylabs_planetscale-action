@@ -9,17 +9,14 @@ inputs:
     required: true
 
   parent-branch:
-    description: 'The parent branch to create a new dev branch from, or merge current dev branch into.'
+    description: 'The parent branch to create a new dev branch from, or merge current dev branch into. Defaults to main.'
     required: false
-    type: string
-    default: main
+    type: string    
 
   branch-name:
-    description: 'The name of the dev branch'
+    description: 'The name of the dev branch. Defaults to name of current git branch.'
     required: false
-    type: string
-    # default to current branch name
-    default: ${{ github.ref.replace('refs/heads/', '') }}
+    type: string    
 
 runs:
   using: 'node16'

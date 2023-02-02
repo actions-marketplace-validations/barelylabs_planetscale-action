@@ -24,8 +24,8 @@ const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchN
 		serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
 
 		action: getInput('action'),
-		parentBranchName: getInput('parentBranchName'),
-		branchName: getInput('branchName'), // || context.ref.replace('refs/heads/', ''),
+		parentBranchName: getInput('parentBranchName') || 'main',
+		branchName: getInput('branchName') || context.ref.replace('refs/heads/', ''),
 	});
 
 const planetscaleBranchSchema = z.object({
