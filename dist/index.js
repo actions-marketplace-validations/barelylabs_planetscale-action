@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@actions/core");
+const github_1 = require("@actions/github");
 const axios_1 = __importDefault(require("axios"));
 const zod_1 = require("zod");
 const planetscaleInputSchema = zod_1.z.object({
@@ -15,14 +16,15 @@ const planetscaleInputSchema = zod_1.z.object({
     parentBranchName: zod_1.z.string(),
     branchName: zod_1.z.string(),
 });
+console.log('the fucking env => ', process.env);
 const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action } = planetscaleInputSchema.parse({
     orgName: process.env.PLANETSCALE_ORG_NAME,
     dbName: (0, core_1.getInput)('dbName') || process.env.PLANETSCALE_DB_NAME,
     serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
     serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
     action: (0, core_1.getInput)('action'),
-    parentBranchName: (0, core_1.getInput)('parentBranchName'),
-    branchName: (0, core_1.getInput)('branchName'), // || context.ref.replace('refs/heads/', ''),
+    parentBranchName: (0, core_1.getInput)('parentBranchName') || 'main',
+    branchName: (0, core_1.getInput)('branchName') || github_1.context.ref.replace('refs/heads/', ''),
 });
 const planetscaleBranchSchema = zod_1.z.object({
     id: zod_1.z.string(),

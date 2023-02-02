@@ -13,20 +13,42 @@ const planetscaleInputSchema = z.object({
 	action: z.enum(['create', 'deploy', 'delete']),
 
 	parentBranchName: z.string(),
-	branchName: z.string(),
+	branchName: z
+		.string()
+		.transform(str => str.replace(/[^a-zA-Z0-9-]/g, ''))
+		.refine(str => str.length > 1),
+});
+
+console.log('the env => ', process.env);
+console.log('context.eventName => ', context.eventName);
+
+let branchNameInput: string | undefined;
+
+if (context.eventName === 'pull_request') {
+	branchNameInput = context.payload.pull_request?.head.ref;
+	console.log('branchNameInput for pull request => ', branchNameInput);
+}
+
+if (context.eventName === 'push') {
+	branchNameInput = context.payload.ref;
+	console.log('branchNameInput for push => ', branchNameInput);
+}
+
+const planetscaleInputs = planetscaleInputSchema.parse({
+	orgName: process.env.PLANETSCALE_ORG_NAME,
+	dbName: getInput('dbName') || process.env.PLANETSCALE_DB_NAME,
+	serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
+	serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
+
+	action: getInput('action'),
+	parentBranchName: getInput('parentBranchName') || 'main',
+	branchName: getInput('branchName') || branchNameInput,
 });
 
 const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action } =
-	planetscaleInputSchema.parse({
-		orgName: process.env.PLANETSCALE_ORG_NAME,
-		dbName: getInput('dbName') || process.env.PLANETSCALE_DB_NAME,
-		serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
-		serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
+	planetscaleInputs;
 
-		action: getInput('action'),
-		parentBranchName: getInput('parentBranchName') || 'main',
-		branchName: getInput('branchName') || context.ref.replace('refs/heads/', ''),
-	});
+console.log('planetscaleInputs => ', planetscaleInputs);
 
 const planetscaleBranchSchema = z.object({
 	id: z.string(),
