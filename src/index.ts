@@ -535,14 +535,18 @@ async function createBranchAndConnectionString() {
 
 async function createDeployRequestAndQueue() {
 	const deployRequestNumber = await createDeployRequest();
-	console.log('deployRequestNumber => ', deployRequestNumber);
+	console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
 
 	const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
-	console.log('queuedDeployRequestNumber => ', queuedDeployRequestNumber);
+	console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
 
 	await waitForDeployRequestToComplete(queuedDeployRequestNumber);
 
 	console.log('deploy request complete');
+
+	setOutput('branch-name', branchName);
+	setOutput('deploy-request-number', queuedDeployRequestNumber);
+	setOutput('deploy-request-status', 'complete');
 
 	return queuedDeployRequestNumber;
 }

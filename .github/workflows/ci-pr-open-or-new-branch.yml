@@ -53,9 +53,11 @@ jobs:
     name: Create Planetscale Dev Branch
     runs-on: ubuntu-latest
     if: ${{ github.event.create || github.event.action == 'opened' || github.event.action == 'synchronize' }}
+    # outputs:
+    #   branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+    #   connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
     outputs:
-      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
-      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+      deploy-request-status: ${{ steps.deploy-db-branch.outputs.deploy-request-status }}
 
     steps:
       - uses: actions/checkout@v3
@@ -67,12 +69,11 @@ jobs:
       #     action: 'create'
       #     overwrite-branch: true
 
-    - name: Deploy db branch to main
-      id: deploy-db-branch
-      uses: ./
-      with:
-        action: 'deploy'
-        # branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      - name: Deploy db branch to main
+        id: deploy-db-branch
+        uses: ./
+        with:
+          action: 'deploy'
 
   # deploy previews to vercel for web, app, and link
 

@@ -16003,11 +16003,14 @@ async function createBranchAndConnectionString() {
 }
 async function createDeployRequestAndQueue() {
     const deployRequestNumber = await createDeployRequest();
-    console.log('deployRequestNumber => ', deployRequestNumber);
+    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
     const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
-    console.log('queuedDeployRequestNumber => ', queuedDeployRequestNumber);
+    console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
     await waitForDeployRequestToComplete(queuedDeployRequestNumber);
     console.log('deploy request complete');
+    (0, core_1.setOutput)('branch-name', branchName);
+    (0, core_1.setOutput)('deploy-request-number', queuedDeployRequestNumber);
+    (0, core_1.setOutput)('deploy-request-status', 'complete');
     return queuedDeployRequestNumber;
 }
 // RUN THE ACTION
