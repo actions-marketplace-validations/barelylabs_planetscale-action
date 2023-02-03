@@ -39,6 +39,8 @@ if (context.eventName === 'push') {
 	console.log('branchNameInput for push => ', branchNameInput);
 }
 
+console.log('getInput(overwriteBranch) => ', getInput('overwriteBranch'));
+
 const planetscaleInputs = planetscaleInputSchema.parse({
 	orgName: process.env.PLANETSCALE_ORG_NAME,
 	dbName: getInput('dbName') || process.env.PLANETSCALE_DB_NAME,
