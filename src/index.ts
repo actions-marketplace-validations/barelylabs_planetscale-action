@@ -22,7 +22,7 @@ const planetscaleInputSchema = z.object({
 		.string()
 		.transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
 		.refine(str => str.length > 1),
-	overwriteBranch: z.boolean().optional(),
+	overwriteBranch: z.boolean(),
 });
 
 console.log('context.eventName => ', context.eventName);
@@ -48,6 +48,7 @@ const planetscaleInputs = planetscaleInputSchema.parse({
 	action: getInput('action'),
 	parentBranchName: getInput('parentBranchName') || 'main',
 	branchName: getInput('branchName') || branchNameInput,
+	overwriteBranch: getInput('overwriteBranch') || false,
 });
 
 const {
