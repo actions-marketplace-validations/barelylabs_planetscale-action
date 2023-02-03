@@ -15965,6 +15965,26 @@ async function waitForBranchToBeReady() {
     }
     throw new Error('Branch failed to be ready');
 }
+async function waitForDeployRequestToBeSafe(deployRequestNumber) {
+    let timeout = 300000;
+    let backoff = 1000;
+    let start = Date.now();
+    while (Date.now() - start < timeout) {
+        const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
+        console.log('deployRequestStatus => ', deployRequestStatus);
+        if (deployRequestStatus === 'ready') {
+            console.log('deploy request is ready!');
+            return 'ready';
+        }
+        if (deployRequestStatus === 'cancelled' || deployRequestStatus === 'error') {
+            throw new Error('Deploy request failed');
+        }
+        console.log('currently validating that these changes are safe to deploy.');
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        backoff = backoff * 2;
+    }
+    throw new Error('Deploy request failed');
+}
 async function waitForDeployRequestToComplete(deployRequestNumber) {
     const start = Date.now();
     const timeout = 300000;
@@ -16004,6 +16024,7 @@ async function createBranchAndConnectionString() {
 async function createDeployRequestAndQueue() {
     const deployRequestNumber = await createDeployRequest();
     console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+    await waitForDeployRequestToBeSafe(deployRequestNumber);
     const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
     console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
     await waitForDeployRequestToComplete(queuedDeployRequestNumber);
