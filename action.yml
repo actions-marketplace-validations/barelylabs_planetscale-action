@@ -10,7 +10,7 @@ inputs:
     type: string
     required: true
 
-  parent-branch:
+  parent-branch-name:
     description: 'The parent branch to create a new dev branch from, or merge current dev branch into. Defaults to main.'
     required: false
     type: string

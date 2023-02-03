@@ -39,18 +39,18 @@ if (context.eventName === 'push') {
 	console.log('branchNameInput for push => ', branchNameInput);
 }
 
-console.log('getInput(overwriteBranch) => ', getInput('overwriteBranch'));
+console.log('getInput(overwriteBranch) => ', getInput('overwrite-branch'));
 
 const planetscaleInputs = planetscaleInputSchema.parse({
 	orgName: process.env.PLANETSCALE_ORG_NAME,
-	dbName: getInput('dbName') || process.env.PLANETSCALE_DB_NAME,
+	dbName: process.env.PLANETSCALE_DB_NAME,
 	serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
 	serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
 
 	action: getInput('action'),
-	parentBranchName: getInput('parentBranchName') || 'main',
-	branchName: getInput('branchName') || branchNameInput,
-	overwriteBranch: getInput('overwriteBranch') || false,
+	parentBranchName: getInput('parent-branch-name') || 'main',
+	branchName: getInput('branch-name') || branchNameInput,
+	overwriteBranch: getInput('overwrite-branch') || false,
 });
 
 const {
