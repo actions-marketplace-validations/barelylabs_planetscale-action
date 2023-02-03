@@ -56,8 +56,8 @@ jobs:
     # outputs:
     #   branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
     #   connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
-    outputs:
-      deploy-request-status: ${{ steps.deploy-db-branch.outputs.deploy-request-status }}
+    # outputs:
+    #   deploy-request-status: ${{ steps.deploy-db-branch.outputs.deploy-request-status }}
 
     steps:
       - uses: actions/checkout@v3
@@ -73,7 +73,7 @@ jobs:
         id: deploy-db-branch
         uses: ./
         with:
-          action: 'deploy'
+          action: 'delete'
 
   # deploy previews to vercel for web, app, and link
 
