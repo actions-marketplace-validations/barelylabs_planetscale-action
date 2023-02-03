@@ -60,7 +60,7 @@ jobs:
     steps:
       - name: Create db branch
         id: create-db-branch
-        uses: barelylabs/planetscale-branch-action@v0.1.1-alpha
+        uses: ./
         with:
           action: 'create'
           overwrite-branch: true
