@@ -170,7 +170,7 @@ const planetscaleBranchPasswordResponseSchema = z.object({
 	plain_text: z.string(),
 });
 
-const planetscaleCreateDeployRequestResponseSchema = z.object({
+const planetscaleDeployRequestResponseSchema = z.object({
 	number: z.number(),
 	id: z.string(),
 	// actor: z.object({
@@ -183,7 +183,7 @@ const planetscaleCreateDeployRequestResponseSchema = z.object({
 	// 	display_name: z.string(),
 	// 	avatar_url: z.string(),
 	// }),
-	// branch: z.string(),
+	branch: z.string(),
 	// branch_deleted: z.boolean(),
 	// branch_deleted_by: z.object({
 	// 	id: z.string(),
@@ -203,7 +203,7 @@ const planetscaleCreateDeployRequestResponseSchema = z.object({
 	created_at: z.string(),
 	updated_at: z.string(),
 	// closed_at: z.string(),
-	// deployed_at: z.string(),
+	deployed_at: z.string(),
 	// deployment: z.object({
 	// 	id: z.string(),
 	// 	auto_cutover: z.boolean(),
@@ -221,41 +221,41 @@ const planetscaleCreateDeployRequestResponseSchema = z.object({
 	// }),
 });
 
-const planetscaleQueueDeployRequestResponseSchema = z.object({
-	number: z.number(),
-	id: z.string(),
-	// actor: z.object({
-	// 	id: z.string(),
-	// 	display_name: z.string(),
-	// 	avatar_url: z.string(),
-	// }),
-	// closed_by: z.object({
-	// 	id: z.string(),
-	// 	display_name: z.string(),
-	// 	avatar_url: z.string(),
-	// }),
-	// branch: z.string(),
-	// branch_deleted: z.boolean(),
-	// branch_deleted_by: z.object({
-	// 	id: z.string(),
-	// 	display_name: z.string(),
-	// 	avatar_url: z.string(),
-	// }),
-	// branch_deleted_at: z.string(),
-	into_branch: z.string(),
-	// into_branch_sharded: z.boolean(),
-	// into_branch_shard_count: z.number(),
-	approved: z.boolean(),
-	state: z.string(),
-	deployment_state: z.string(),
-	// html_url: z.string(),
-	// notes: z.string(),
-	// html_body: z.string(),
-	created_at: z.string(),
-	updated_at: z.string(),
-	// closed_at: z.string(),
-	deployed_at: z.string(),
-});
+// const planetscaleQueueDeployRequestResponseSchema = z.object({
+// 	number: z.number(),
+// 	id: z.string(),
+// 	// actor: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// closed_by: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// branch: z.string(),
+// 	// branch_deleted: z.boolean(),
+// 	// branch_deleted_by: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// branch_deleted_at: z.string(),
+// 	into_branch: z.string(),
+// 	// into_branch_sharded: z.boolean(),
+// 	// into_branch_shard_count: z.number(),
+// 	approved: z.boolean(),
+// 	state: z.string(),
+// 	deployment_state: z.string(),
+// 	// html_url: z.string(),
+// 	// notes: z.string(),
+// 	// html_body: z.string(),
+// 	created_at: z.string(),
+// 	updated_at: z.string(),
+// 	// closed_at: z.string(),
+// 	deployed_at: z.string(),
+// });
 
 const planetscaleGetDeployRequestResponseSchema = z.object({
 	number: z.number(),
@@ -409,6 +409,38 @@ async function createConnectionString() {
 	return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
 }
 
+// deploy requests
+
+async function getDeployRequest(deployRequestNumber: number) {
+	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
+	const options = { method: 'GET', url, headers };
+
+	const deployRequestData = await axios
+		.request(options)
+		.then(res => res.data)
+		.catch(err => {
+			throw new Error(err.response.data.message);
+		});
+
+	return planetscaleDeployRequestResponseSchema.parse(deployRequestData);
+}
+
+async function getAllDeployRequests() {
+	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
+	const options = { method: 'GET', url, headers };
+
+	const deployRequestData = await axios
+		.request(options)
+		.then(res => res.data)
+		.catch(err => {
+			throw new Error(err.response.data.message);
+		});
+
+	return z.array(planetscaleDeployRequestResponseSchema).parse(deployRequestData);
+
+	// return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData);
+}
+
 async function createDeployRequest() {
 	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
 	const data = { branch: branchName, into_branch: parentBranchName };
@@ -421,7 +453,7 @@ async function createDeployRequest() {
 			throw new Error(err.response.data.message);
 		});
 
-	return planetscaleCreateDeployRequestResponseSchema.parse(deployRequestData).number;
+	return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 
 async function queueDeployRequest(deployRequestNumber: number) {
@@ -435,21 +467,7 @@ async function queueDeployRequest(deployRequestNumber: number) {
 			throw new Error(err.response.data.message);
 		});
 
-	return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).number;
-}
-
-async function getDeployRequestStatus(deployRequestNumber: number) {
-	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
-	const options = { method: 'GET', url, headers };
-
-	const deployRequestData = await axios
-		.request(options)
-		.then(res => res.data)
-		.catch(err => {
-			throw new Error(err.response.data.message);
-		});
-
-	return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
+	return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 
 async function deleteBranch() {
@@ -465,6 +483,7 @@ async function deleteBranch() {
 }
 
 // WAITS
+
 async function waitForBranchToBeReady() {
 	let timeout = 300000;
 	let backoff = 1000;
@@ -490,7 +509,7 @@ async function waitForDeployRequestToBeSafe(deployRequestNumber: number) {
 	let start = Date.now();
 
 	while (Date.now() - start < timeout) {
-		const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
+		const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
 		console.log('deployRequestStatus => ', deployRequestStatus);
 		if (deployRequestStatus === 'ready') {
 			console.log('deploy request is ready!');
@@ -514,7 +533,7 @@ async function waitForDeployRequestToComplete(deployRequestNumber: number) {
 	let backoff = 1000;
 
 	while (Date.now() - start < timeout) {
-		const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
+		const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
 		console.log('deployRequestStatus => ', deployRequestStatus);
 		if (
 			deployRequestStatus === 'complete' ||
@@ -558,8 +577,17 @@ async function createBranchAndConnectionString() {
 }
 
 async function createDeployRequestAndQueue() {
-	const deployRequestNumber = await createDeployRequest();
-	console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+	// check if deploy request already exists for this branch
+	const deployRequests = await getAllDeployRequests();
+	let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
+
+	if (!deployRequestNumber) {
+		deployRequestNumber = await createDeployRequest();
+		console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+	}
+
+	// const deployRequestNumber = await createDeployRequest();
+	// console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
 
 	await waitForDeployRequestToBeSafe(deployRequestNumber);
 

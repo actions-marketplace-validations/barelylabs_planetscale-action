@@ -15679,7 +15679,7 @@ const planetscaleBranchPasswordResponseSchema = zod_1.z.object({
     // ),
     plain_text: zod_1.z.string(),
 });
-const planetscaleCreateDeployRequestResponseSchema = zod_1.z.object({
+const planetscaleDeployRequestResponseSchema = zod_1.z.object({
     number: zod_1.z.number(),
     id: zod_1.z.string(),
     // actor: z.object({
@@ -15692,7 +15692,7 @@ const planetscaleCreateDeployRequestResponseSchema = zod_1.z.object({
     // 	display_name: z.string(),
     // 	avatar_url: z.string(),
     // }),
-    // branch: z.string(),
+    branch: zod_1.z.string(),
     // branch_deleted: z.boolean(),
     // branch_deleted_by: z.object({
     // 	id: z.string(),
@@ -15712,7 +15712,7 @@ const planetscaleCreateDeployRequestResponseSchema = zod_1.z.object({
     created_at: zod_1.z.string(),
     updated_at: zod_1.z.string(),
     // closed_at: z.string(),
-    // deployed_at: z.string(),
+    deployed_at: zod_1.z.string(),
     // deployment: z.object({
     // 	id: z.string(),
     // 	auto_cutover: z.boolean(),
@@ -15729,41 +15729,41 @@ const planetscaleCreateDeployRequestResponseSchema = zod_1.z.object({
     // 	updated_at: z.string(),
     // }),
 });
-const planetscaleQueueDeployRequestResponseSchema = zod_1.z.object({
-    number: zod_1.z.number(),
-    id: zod_1.z.string(),
-    // actor: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    // closed_by: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    // branch: z.string(),
-    // branch_deleted: z.boolean(),
-    // branch_deleted_by: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    // branch_deleted_at: z.string(),
-    into_branch: zod_1.z.string(),
-    // into_branch_sharded: z.boolean(),
-    // into_branch_shard_count: z.number(),
-    approved: zod_1.z.boolean(),
-    state: zod_1.z.string(),
-    deployment_state: zod_1.z.string(),
-    // html_url: z.string(),
-    // notes: z.string(),
-    // html_body: z.string(),
-    created_at: zod_1.z.string(),
-    updated_at: zod_1.z.string(),
-    // closed_at: z.string(),
-    deployed_at: zod_1.z.string(),
-});
+// const planetscaleQueueDeployRequestResponseSchema = z.object({
+// 	number: z.number(),
+// 	id: z.string(),
+// 	// actor: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// closed_by: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// branch: z.string(),
+// 	// branch_deleted: z.boolean(),
+// 	// branch_deleted_by: z.object({
+// 	// 	id: z.string(),
+// 	// 	display_name: z.string(),
+// 	// 	avatar_url: z.string(),
+// 	// }),
+// 	// branch_deleted_at: z.string(),
+// 	into_branch: z.string(),
+// 	// into_branch_sharded: z.boolean(),
+// 	// into_branch_shard_count: z.number(),
+// 	approved: z.boolean(),
+// 	state: z.string(),
+// 	deployment_state: z.string(),
+// 	// html_url: z.string(),
+// 	// notes: z.string(),
+// 	// html_body: z.string(),
+// 	created_at: z.string(),
+// 	updated_at: z.string(),
+// 	// closed_at: z.string(),
+// 	deployed_at: z.string(),
+// });
 const planetscaleGetDeployRequestResponseSchema = zod_1.z.object({
     number: zod_1.z.number(),
     id: zod_1.z.string(),
@@ -15904,6 +15904,30 @@ async function createConnectionString() {
     const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
     return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
 }
+// deploy requests
+async function getDeployRequest(deployRequestNumber) {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
+    const options = { method: 'GET', url, headers };
+    const deployRequestData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw new Error(err.response.data.message);
+    });
+    return planetscaleDeployRequestResponseSchema.parse(deployRequestData);
+}
+async function getAllDeployRequests() {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
+    const options = { method: 'GET', url, headers };
+    const deployRequestData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw new Error(err.response.data.message);
+    });
+    return zod_1.z.array(planetscaleDeployRequestResponseSchema).parse(deployRequestData);
+    // return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData);
+}
 async function createDeployRequest() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
     const data = { branch: branchName, into_branch: parentBranchName };
@@ -15914,7 +15938,7 @@ async function createDeployRequest() {
         .catch(err => {
         throw new Error(err.response.data.message);
     });
-    return planetscaleCreateDeployRequestResponseSchema.parse(deployRequestData).number;
+    return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 async function queueDeployRequest(deployRequestNumber) {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}/deploy`;
@@ -15925,18 +15949,7 @@ async function queueDeployRequest(deployRequestNumber) {
         .catch(err => {
         throw new Error(err.response.data.message);
     });
-    return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).number;
-}
-async function getDeployRequestStatus(deployRequestNumber) {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
-    const options = { method: 'GET', url, headers };
-    const deployRequestData = await axios_1.default
-        .request(options)
-        .then(res => res.data)
-        .catch(err => {
-        throw new Error(err.response.data.message);
-    });
-    return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData).deployment_state;
+    return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
 async function deleteBranch() {
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
@@ -15970,7 +15983,7 @@ async function waitForDeployRequestToBeSafe(deployRequestNumber) {
     let backoff = 1000;
     let start = Date.now();
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
+        const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'ready') {
             console.log('deploy request is ready!');
@@ -15990,7 +16003,7 @@ async function waitForDeployRequestToComplete(deployRequestNumber) {
     const timeout = 300000;
     let backoff = 1000;
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = await getDeployRequestStatus(deployRequestNumber);
+        const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'complete' ||
             deployRequestStatus === 'complete_pending_revert') {
@@ -16022,8 +16035,16 @@ async function createBranchAndConnectionString() {
     return connectionString;
 }
 async function createDeployRequestAndQueue() {
-    const deployRequestNumber = await createDeployRequest();
-    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+    var _a;
+    // check if deploy request already exists for this branch
+    const deployRequests = await getAllDeployRequests();
+    let deployRequestNumber = (_a = deployRequests.find(req => req.branch === branchName)) === null || _a === void 0 ? void 0 : _a.number;
+    if (!deployRequestNumber) {
+        deployRequestNumber = await createDeployRequest();
+        console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+    }
+    // const deployRequestNumber = await createDeployRequest();
+    // console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
     await waitForDeployRequestToBeSafe(deployRequestNumber);
     const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
     console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
