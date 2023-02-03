@@ -63,7 +63,7 @@ jobs:
         uses: barelylabs/planetscale-branch-action@v0.1.1-alpha
         with:
           action: 'create'
-          overwrite-branch: true
+          overwrite-branch: false
 
   # deploy previews to vercel for web, app, and link
 
