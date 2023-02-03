@@ -50,7 +50,7 @@ const planetscaleInputs = planetscaleInputSchema.parse({
 	action: getInput('action'),
 	parentBranchName: getInput('parent-branch-name') || 'main',
 	branchName: getInput('branch-name') || branchNameInput,
-	overwriteBranch: getBooleanInput('overwrite-branch') || false,
+	overwriteBranch: getBooleanInput('overwrite-branch'),
 });
 
 const {

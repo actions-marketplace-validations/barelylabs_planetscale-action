@@ -24,6 +24,7 @@ inputs:
     description: 'Whether to overwrite an existing dev branch. Defaults to false.'
     required: false
     type: boolean
+    default: false
 
 runs:
   using: 'node16'

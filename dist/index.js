@@ -15575,7 +15575,7 @@ const planetscaleInputs = planetscaleInputSchema.parse({
     action: (0, core_1.getInput)('action'),
     parentBranchName: (0, core_1.getInput)('parent-branch-name') || 'main',
     branchName: (0, core_1.getInput)('branch-name') || branchNameInput,
-    overwriteBranch: (0, core_1.getBooleanInput)('overwrite-branch') || false,
+    overwriteBranch: (0, core_1.getBooleanInput)('overwrite-branch'),
 });
 const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action, overwriteBranch, } = planetscaleInputs;
 console.log('planetscaleInputs => ', planetscaleInputs);
