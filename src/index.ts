@@ -506,7 +506,12 @@ async function waitForDeployRequestToComplete(deployRequestNumber: number) {
 async function createBranchAndConnectionString() {
 	const branch = await getBranch();
 
-	if (branch && overwriteBranch) await deleteBranch();
+	console.log('overwriteBranch => ', overwriteBranch);
+
+	if (branch && overwriteBranch) {
+		console.log('deleting branch...');
+		await deleteBranch();
+	}
 
 	if (!branch || overwriteBranch) {
 		const newBranch = await createBranch();
