@@ -436,8 +436,11 @@ async function getAllDeployRequests() {
 			throw new Error(err.response.data.message);
 		});
 
-	return z.array(planetscaleDeployRequestResponseSchema).parse(deployRequestData);
+	const parsedDeployRequest = z
+		.object({ data: z.array(planetscaleDeployRequestResponseSchema) })
+		.parse(deployRequestData);
 
+	return parsedDeployRequest.data;
 	// return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData);
 }
 

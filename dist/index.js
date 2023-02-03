@@ -15925,7 +15925,10 @@ async function getAllDeployRequests() {
         .catch(err => {
         throw new Error(err.response.data.message);
     });
-    return zod_1.z.array(planetscaleDeployRequestResponseSchema).parse(deployRequestData);
+    const parsedDeployRequest = zod_1.z
+        .object({ data: zod_1.z.array(planetscaleDeployRequestResponseSchema) })
+        .parse(deployRequestData);
+    return parsedDeployRequest.data;
     // return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData);
 }
 async function createDeployRequest() {
