@@ -1,4 +1,4 @@
-import { getInput, setOutput } from '@actions/core';
+import { getInput, getBooleanInput, setOutput } from '@actions/core';
 import { context } from '@actions/github';
 
 import axios from 'axios';
@@ -39,7 +39,7 @@ if (context.eventName === 'push') {
 	console.log('branchNameInput for push => ', branchNameInput);
 }
 
-console.log('getInput(overwriteBranch) => ', getInput('overwrite-branch'));
+console.log('getInput(overwriteBranch) => ', getBooleanInput('overwrite-branch'));
 
 const planetscaleInputs = planetscaleInputSchema.parse({
 	orgName: process.env.PLANETSCALE_ORG_NAME,
@@ -50,7 +50,7 @@ const planetscaleInputs = planetscaleInputSchema.parse({
 	action: getInput('action'),
 	parentBranchName: getInput('parent-branch-name') || 'main',
 	branchName: getInput('branch-name') || branchNameInput,
-	overwriteBranch: getInput('overwrite-branch') || false,
+	overwriteBranch: getBooleanInput('overwrite-branch') || false,
 });
 
 const {
