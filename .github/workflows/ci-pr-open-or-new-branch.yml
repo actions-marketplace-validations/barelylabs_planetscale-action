@@ -60,12 +60,19 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Create db branch
-        id: create-db-branch
-        uses: ./
-        with:
-          action: 'create'
-          overwrite-branch: true
+      # - name: Create db branch
+      #   id: create-db-branch
+      #   uses: ./
+      #   with:
+      #     action: 'create'
+      #     overwrite-branch: true
+
+    - name: Deploy db branch to main
+      id: deploy-db-branch
+      uses: ./
+      with:
+        action: 'deploy'
+        # branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
 
   # deploy previews to vercel for web, app, and link
 
