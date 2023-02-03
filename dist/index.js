@@ -15566,16 +15566,16 @@ if (github_1.context.eventName === 'push') {
     branchNameInput = github_1.context.payload.ref;
     console.log('branchNameInput for push => ', branchNameInput);
 }
-console.log('getInput(overwriteBranch) => ', (0, core_1.getInput)('overwriteBranch'));
+console.log('getInput(overwriteBranch) => ', (0, core_1.getInput)('overwrite-branch'));
 const planetscaleInputs = planetscaleInputSchema.parse({
     orgName: process.env.PLANETSCALE_ORG_NAME,
-    dbName: (0, core_1.getInput)('dbName') || process.env.PLANETSCALE_DB_NAME,
+    dbName: process.env.PLANETSCALE_DB_NAME,
     serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
     serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
     action: (0, core_1.getInput)('action'),
-    parentBranchName: (0, core_1.getInput)('parentBranchName') || 'main',
-    branchName: (0, core_1.getInput)('branchName') || branchNameInput,
-    overwriteBranch: (0, core_1.getInput)('overwriteBranch') || false,
+    parentBranchName: (0, core_1.getInput)('parent-branch-name') || 'main',
+    branchName: (0, core_1.getInput)('branch-name') || branchNameInput,
+    overwriteBranch: (0, core_1.getInput)('overwrite-branch') || false,
 });
 const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action, overwriteBranch, } = planetscaleInputs;
 console.log('planetscaleInputs => ', planetscaleInputs);
