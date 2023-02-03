@@ -15709,10 +15709,10 @@ const planetscaleDeployRequestResponseSchema = zod_1.z.object({
     // html_url: z.string(),
     // notes: z.string(),
     // html_body: z.string(),
-    created_at: zod_1.z.string(),
-    updated_at: zod_1.z.string(),
+    created_at: zod_1.z.string().nullish(),
+    updated_at: zod_1.z.string().nullish(),
     // closed_at: z.string(),
-    deployed_at: zod_1.z.string(),
+    deployed_at: zod_1.z.string().nullish(),
     // deployment: z.object({
     // 	id: z.string(),
     // 	auto_cutover: z.boolean(),
@@ -16038,16 +16038,13 @@ async function createBranchAndConnectionString() {
     return connectionString;
 }
 async function createDeployRequestAndQueue() {
-    var _a;
     // check if deploy request already exists for this branch
-    const deployRequests = await getAllDeployRequests();
-    let deployRequestNumber = (_a = deployRequests.find(req => req.branch === branchName)) === null || _a === void 0 ? void 0 : _a.number;
-    if (!deployRequestNumber) {
-        deployRequestNumber = await createDeployRequest();
-        console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
-    }
-    // const deployRequestNumber = await createDeployRequest();
-    // console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+    // const deployRequests = await getAllDeployRequests();
+    // let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
+    // if (!deployRequestNumber) {
+    // }
+    const deployRequestNumber = await createDeployRequest();
+    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
     await waitForDeployRequestToBeSafe(deployRequestNumber);
     const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
     console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);

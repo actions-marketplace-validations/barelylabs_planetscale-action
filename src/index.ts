@@ -200,10 +200,10 @@ const planetscaleDeployRequestResponseSchema = z.object({
 	// html_url: z.string(),
 	// notes: z.string(),
 	// html_body: z.string(),
-	created_at: z.string(),
-	updated_at: z.string(),
+	created_at: z.string().nullish(),
+	updated_at: z.string().nullish(),
 	// closed_at: z.string(),
-	deployed_at: z.string(),
+	deployed_at: z.string().nullish(),
 	// deployment: z.object({
 	// 	id: z.string(),
 	// 	auto_cutover: z.boolean(),
@@ -581,16 +581,14 @@ async function createBranchAndConnectionString() {
 
 async function createDeployRequestAndQueue() {
 	// check if deploy request already exists for this branch
-	const deployRequests = await getAllDeployRequests();
-	let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
+	// const deployRequests = await getAllDeployRequests();
+	// let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
 
-	if (!deployRequestNumber) {
-		deployRequestNumber = await createDeployRequest();
-		console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
-	}
+	// if (!deployRequestNumber) {
+	// }
 
-	// const deployRequestNumber = await createDeployRequest();
-	// console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+	const deployRequestNumber = await createDeployRequest();
+	console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
 
 	await waitForDeployRequestToBeSafe(deployRequestNumber);
 
