@@ -5,6 +5,8 @@ import axios from 'axios';
 import { error } from 'console';
 import { z } from 'zod';
 
+import crypto from 'crypto';
+
 // INPUTS
 
 const planetscaleInputSchema = z.object({
@@ -385,8 +387,12 @@ async function getBranchStatus() {
 }
 
 async function createConnectionString() {
+	const pwId = crypto
+		.randomUUID()
+		.replace(/[^a-zA-Z0-9]/g, '')
+		.slice(0, 10);
 	const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}/passwords`;
-	const data = { role: 'readwriter' };
+	const data = { role: 'readwriter', name: `${branchName}-${pwId}` };
 	const options = { method: 'POST', url, headers, data };
 
 	const planetscalePasswordData = await axios
