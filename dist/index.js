@@ -16042,6 +16042,7 @@ async function createDeployRequestAndQueue() {
     // const deployRequests = await getAllDeployRequests();
     // let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
     // if (!deployRequestNumber) {
+    // FIXME: we should do this if planetscale api offers a way to query deploy requests by branch name
     // }
     const deployRequestNumber = await createDeployRequest();
     console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
