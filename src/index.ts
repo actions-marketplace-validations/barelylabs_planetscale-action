@@ -3,10 +3,11 @@ import { context } from '@actions/github';
 
 import { z } from 'zod';
 
-import { createBranchAndConnectionString } from './scripts/createBranchAndConnectionString';
-import { createDeployRequestAndQueue } from './scripts/createDeployRequestAndQueue';
 import { deleteBranch } from './endpoints/branch';
-import { getAllDeployRequests } from './endpoints/deployRequest';
+
+import { createBranchAndConnectionString } from './scripts/createBranchAndConnectionString';
+import { openDeployRequest } from './scripts';
+import { queueMostRecentDeployRequest } from './scripts/queueMostRecentDeployRequest';
 
 // branch name
 
@@ -20,7 +21,13 @@ const actionInputsSchema = z.object({
 	dbName: z.string(),
 	serviceTokenId: z.string(),
 	serviceToken: z.string(),
-	action: z.enum(['create', 'deploy', 'delete']),
+
+	action: z.enum([
+		'create-branch',
+		'open-deploy-request',
+		'queue-deploy-request',
+		'delete-branch',
+	]),
 	parentBranchName: z.string(),
 	branchName: z
 		.string()
@@ -53,7 +60,7 @@ const actionProps = {
 export type BranchActionProps = typeof actionProps;
 
 // RUN THE ACTION
-if (actionInputs.action === 'create') createBranchAndConnectionString(actionProps);
-// if (actionInputs.action === 'deploy') createDeployRequestAndQueue(actionProps);
-if (actionInputs.action === 'deploy') getAllDeployRequests(actionProps);
-if (actionInputs.action === 'delete') deleteBranch(actionProps);
+if (actionInputs.action === 'create-branch') createBranchAndConnectionString(actionProps);
+if (actionInputs.action === 'open-deploy-request') openDeployRequest(actionProps);
+if (actionInputs.action === 'queue-deploy-request') queueMostRecentDeployRequest(actionProps);
+if (actionInputs.action === 'delete-branch') deleteBranch(actionProps);

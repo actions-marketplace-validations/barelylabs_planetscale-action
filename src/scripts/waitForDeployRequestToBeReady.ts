@@ -1,7 +1,7 @@
 import { BranchActionProps } from '..';
 import { getDeployRequest } from '../endpoints/deployRequest';
 
-export async function waitForDeployRequestToBeSafe(
+export async function waitForDeployRequestToBeReady(
 	props: BranchActionProps & { deployRequestNumber: number }
 ) {
 	let timeout = 300000;

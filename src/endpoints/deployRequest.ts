@@ -27,8 +27,28 @@ const planetscaleDeployRequestResponseSchema = z.object({
 	// into_branch_sharded: z.boolean(),
 	// into_branch_shard_count: z.number(),
 	// approved: z.boolean(),
-	state: z.string(),
-	deployment_state: z.string(),
+	state: z.enum(['open', 'closed']),
+	deployment_state: z.enum([
+		'pending',
+		'ready',
+		'no_changes',
+		'queued',
+		'submitting',
+		'in_progress',
+		'pending_cutover',
+		'in_progress_vschema',
+		'in_progress_cancel',
+		'in_progress_cutover',
+		'complete',
+		'complete_cancel',
+		'complete_error',
+		'complete_pending_revert',
+		'in_progress_revert',
+		'complete_revert',
+		'complete_revert_error',
+		'cancelled',
+		'error',
+	]),
 	// html_url: z.string(),
 	// notes: z.string(),
 	// html_body: z.string(),
@@ -105,7 +125,7 @@ export async function createDeployRequest(
 			throw new Error(err.response.data.message);
 		});
 
-	return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
+	return planetscaleDeployRequestResponseSchema.parse(deployRequestData);
 }
 
 export async function queueDeployRequest(

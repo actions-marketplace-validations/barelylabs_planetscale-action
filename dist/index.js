@@ -15754,8 +15754,28 @@ const planetscaleDeployRequestResponseSchema = zod_1.z.object({
     // into_branch_sharded: z.boolean(),
     // into_branch_shard_count: z.number(),
     // approved: z.boolean(),
-    state: zod_1.z.string(),
-    deployment_state: zod_1.z.string(),
+    state: zod_1.z.enum(['open', 'closed']),
+    deployment_state: zod_1.z.enum([
+        'pending',
+        'ready',
+        'no_changes',
+        'queued',
+        'submitting',
+        'in_progress',
+        'pending_cutover',
+        'in_progress_vschema',
+        'in_progress_cancel',
+        'in_progress_cutover',
+        'complete',
+        'complete_cancel',
+        'complete_error',
+        'complete_pending_revert',
+        'in_progress_revert',
+        'complete_revert',
+        'complete_revert_error',
+        'cancelled',
+        'error',
+    ]),
     // html_url: z.string(),
     // notes: z.string(),
     // html_body: z.string(),
@@ -15820,7 +15840,7 @@ async function createDeployRequest(props) {
         .catch(err => {
         throw new Error(err.response.data.message);
     });
-    return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
+    return planetscaleDeployRequestResponseSchema.parse(deployRequestData);
 }
 exports.createDeployRequest = createDeployRequest;
 async function queueDeployRequest(props) {
@@ -15874,6 +15894,103 @@ exports.createBranchAndConnectionString = createBranchAndConnectionString;
 
 /***/ }),
 
+/***/ 9531:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+__exportStar(__nccwpck_require__(2407), exports);
+__exportStar(__nccwpck_require__(2202), exports);
+__exportStar(__nccwpck_require__(7547), exports);
+__exportStar(__nccwpck_require__(842), exports);
+
+
+/***/ }),
+
+/***/ 2202:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.openDeployRequest = void 0;
+const core_1 = __nccwpck_require__(7733);
+const deployRequest_1 = __nccwpck_require__(8132);
+async function openDeployRequest(props) {
+    const allDeployRequests = await (0, deployRequest_1.getAllDeployRequests)(props);
+    const mostRecentDeployRequest = allDeployRequests.find(req => req.branch === props.branchName);
+    if ((mostRecentDeployRequest === null || mostRecentDeployRequest === void 0 ? void 0 : mostRecentDeployRequest.state) === 'open') {
+        console.log('deploy request already open');
+        (0, core_1.setOutput)('branch-name', props.branchName);
+        (0, core_1.setOutput)('deploy-request-number', mostRecentDeployRequest.number);
+        (0, core_1.setOutput)('deploy-request-status', 'open');
+        return mostRecentDeployRequest;
+    }
+    const newDeployRequest = await (0, deployRequest_1.createDeployRequest)(props);
+    (0, core_1.setOutput)('branch-name', props.branchName);
+    (0, core_1.setOutput)('deploy-request-number', newDeployRequest.number);
+    (0, core_1.setOutput)('deploy-request-status', 'complete');
+    return newDeployRequest;
+    // await waitForDeployRequestToBeReady({ ...props, deployRequestNumber: newDeployRequest.number });
+    // const queuedDeployRequestNumber = await queueDeployRequest({
+    // 	...props,
+    // 	deployRequestNumber,
+    // });
+    // console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
+    // await waitForDeployRequestToComplete({
+    // 	...props,
+    // 	deployRequestNumber: queuedDeployRequestNumber,
+    // });
+    // console.log('deploy request complete');
+}
+exports.openDeployRequest = openDeployRequest;
+
+
+/***/ }),
+
+/***/ 2060:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.queueMostRecentDeployRequest = void 0;
+const deployRequest_1 = __nccwpck_require__(8132);
+const waitForDeployRequestToBeReady_1 = __nccwpck_require__(7547);
+const waitForDeployRequestToComplete_1 = __nccwpck_require__(842);
+async function queueMostRecentDeployRequest(props) {
+    const allDeployRequests = await (0, deployRequest_1.getAllDeployRequests)(props);
+    const mostRecentDeployRequest = allDeployRequests.find(req => req.branch === props.branchName);
+    let deployRequestNumber = mostRecentDeployRequest === null || mostRecentDeployRequest === void 0 ? void 0 : mostRecentDeployRequest.number;
+    if (!deployRequestNumber || (mostRecentDeployRequest === null || mostRecentDeployRequest === void 0 ? void 0 : mostRecentDeployRequest.state) === 'closed') {
+        console.log('no existing deploy request for that branch. we need to create one.');
+        const newDeployRequest = await (0, deployRequest_1.createDeployRequest)(props);
+        deployRequestNumber = newDeployRequest.number;
+    }
+    await (0, waitForDeployRequestToBeReady_1.waitForDeployRequestToBeReady)({ ...props, deployRequestNumber });
+    await (0, deployRequest_1.queueDeployRequest)({ ...props, deployRequestNumber });
+    await (0, waitForDeployRequestToComplete_1.waitForDeployRequestToComplete)({ ...props, deployRequestNumber });
+}
+exports.queueMostRecentDeployRequest = queueMostRecentDeployRequest;
+
+
+/***/ }),
+
 /***/ 6493:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -15899,6 +16016,68 @@ async function waitForBranchToBeReady(actionProps) {
     throw new Error('Branch failed to be ready');
 }
 exports.waitForBranchToBeReady = waitForBranchToBeReady;
+
+
+/***/ }),
+
+/***/ 7547:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForDeployRequestToBeReady = void 0;
+const deployRequest_1 = __nccwpck_require__(8132);
+async function waitForDeployRequestToBeReady(props) {
+    let timeout = 300000;
+    let backoff = 1000;
+    let start = Date.now();
+    while (Date.now() - start < timeout) {
+        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
+        console.log('deployRequestStatus => ', deployRequestStatus);
+        if (deployRequestStatus === 'ready') {
+            console.log('deploy request is ready!');
+            return 'ready';
+        }
+        if (deployRequestStatus === 'cancelled' || deployRequestStatus === 'error') {
+            throw new Error('Deploy request failed');
+        }
+        console.log('currently validating that these changes are safe to deploy.');
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        backoff = backoff * 2;
+    }
+    throw new Error('Deploy request failed');
+}
+exports.waitForDeployRequestToBeReady = waitForDeployRequestToBeReady;
+
+
+/***/ }),
+
+/***/ 842:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForDeployRequestToComplete = void 0;
+const deployRequest_1 = __nccwpck_require__(8132);
+async function waitForDeployRequestToComplete(props) {
+    const start = Date.now();
+    const timeout = 300000;
+    let backoff = 1000;
+    while (Date.now() - start < timeout) {
+        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
+        console.log('deployRequestStatus => ', deployRequestStatus);
+        if (deployRequestStatus === 'complete' ||
+            deployRequestStatus === 'complete_pending_revert') {
+            return 'complete';
+        }
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        backoff = backoff * 2;
+    }
+    throw new Error(`Deploy request failed to complete within ${timeout / 1000} seconds.`);
+}
+exports.waitForDeployRequestToComplete = waitForDeployRequestToComplete;
 
 
 /***/ }),
@@ -20290,9 +20469,10 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(7733);
 const github_1 = __nccwpck_require__(3695);
 const zod_1 = __nccwpck_require__(1460);
-const createBranchAndConnectionString_1 = __nccwpck_require__(2407);
 const branch_1 = __nccwpck_require__(8549);
-const deployRequest_1 = __nccwpck_require__(8132);
+const createBranchAndConnectionString_1 = __nccwpck_require__(2407);
+const scripts_1 = __nccwpck_require__(9531);
+const queueMostRecentDeployRequest_1 = __nccwpck_require__(2060);
 // branch name
 const gitBranchName = github_1.context.eventName === 'pull_request'
     ? (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.head.ref
@@ -20302,7 +20482,12 @@ const actionInputsSchema = zod_1.z.object({
     dbName: zod_1.z.string(),
     serviceTokenId: zod_1.z.string(),
     serviceToken: zod_1.z.string(),
-    action: zod_1.z.enum(['create', 'deploy', 'delete']),
+    action: zod_1.z.enum([
+        'create-branch',
+        'open-deploy-request',
+        'queue-deploy-request',
+        'delete-branch',
+    ]),
     parentBranchName: zod_1.z.string(),
     branchName: zod_1.z
         .string()
@@ -20329,12 +20514,13 @@ const actionProps = {
     },
 };
 // RUN THE ACTION
-if (actionInputs.action === 'create')
+if (actionInputs.action === 'create-branch')
     (0, createBranchAndConnectionString_1.createBranchAndConnectionString)(actionProps);
-// if (actionInputs.action === 'deploy') createDeployRequestAndQueue(actionProps);
-if (actionInputs.action === 'deploy')
-    (0, deployRequest_1.getAllDeployRequests)(actionProps);
-if (actionInputs.action === 'delete')
+if (actionInputs.action === 'open-deploy-request')
+    (0, scripts_1.openDeployRequest)(actionProps);
+if (actionInputs.action === 'queue-deploy-request')
+    (0, queueMostRecentDeployRequest_1.queueMostRecentDeployRequest)(actionProps);
+if (actionInputs.action === 'delete-branch')
     (0, branch_1.deleteBranch)(actionProps);
 
 })();

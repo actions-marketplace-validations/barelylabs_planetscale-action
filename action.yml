@@ -6,7 +6,7 @@ description: 'Create, deploy, or delete a Planetscale branch.'
 
 inputs:
   action:
-    description: "accepts 'create', 'deploy', or 'delete'"
+    description: "accepts 'create-branch', 'open-deploy-request', 'queue-deploy-request', or 'delete-branch'"
     type: string
     required: true
 
