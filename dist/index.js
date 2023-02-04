@@ -15883,9 +15883,9 @@ async function createBranchAndConnectionString(props) {
     }
     const branchStatus = await (0, waitForBranchToBeReady_1.waitForBranchToBeReady)(props);
     console.log('branchStatus => ', branchStatus);
+    (0, core_1.setOutput)('branch-status', branchStatus);
     const connectionString = await (0, branchPassword_1.createConnectionString)(props);
     console.log('connectionString => ', connectionString);
-    (0, core_1.setOutput)('branch-name', props.branchName);
     (0, core_1.setOutput)('connection-string', connectionString);
     return connectionString;
 }
@@ -15946,17 +15946,6 @@ async function openDeployRequest(props) {
     (0, core_1.setOutput)('deploy-request-number', newDeployRequest.number);
     (0, core_1.setOutput)('deploy-request-status', 'complete');
     return newDeployRequest;
-    // await waitForDeployRequestToBeReady({ ...props, deployRequestNumber: newDeployRequest.number });
-    // const queuedDeployRequestNumber = await queueDeployRequest({
-    // 	...props,
-    // 	deployRequestNumber,
-    // });
-    // console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
-    // await waitForDeployRequestToComplete({
-    // 	...props,
-    // 	deployRequestNumber: queuedDeployRequestNumber,
-    // });
-    // console.log('deploy request complete');
 }
 exports.openDeployRequest = openDeployRequest;
 
@@ -15970,6 +15959,7 @@ exports.openDeployRequest = openDeployRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.queueMostRecentDeployRequest = void 0;
+const core_1 = __nccwpck_require__(7733);
 const deployRequest_1 = __nccwpck_require__(8132);
 const waitForDeployRequestToBeReady_1 = __nccwpck_require__(7547);
 const waitForDeployRequestToComplete_1 = __nccwpck_require__(842);
@@ -15982,6 +15972,7 @@ async function queueMostRecentDeployRequest(props) {
         const newDeployRequest = await (0, deployRequest_1.createDeployRequest)(props);
         deployRequestNumber = newDeployRequest.number;
     }
+    (0, core_1.setOutput)('deploy-request-number', deployRequestNumber);
     await (0, waitForDeployRequestToBeReady_1.waitForDeployRequestToBeReady)({ ...props, deployRequestNumber });
     await (0, deployRequest_1.queueDeployRequest)({ ...props, deployRequestNumber });
     await (0, waitForDeployRequestToComplete_1.waitForDeployRequestToComplete)({ ...props, deployRequestNumber });
@@ -15998,6 +15989,7 @@ exports.queueMostRecentDeployRequest = queueMostRecentDeployRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.waitForBranchToBeReady = void 0;
+const core_1 = __nccwpck_require__(7733);
 const branch_1 = __nccwpck_require__(8549);
 async function waitForBranchToBeReady(actionProps) {
     let timeout = 300000;
@@ -16007,12 +15999,14 @@ async function waitForBranchToBeReady(actionProps) {
         const branch = await (0, branch_1.getBranch)(actionProps);
         if (branch === null || branch === void 0 ? void 0 : branch.ready) {
             console.log('branch is ready!');
+            (0, core_1.setOutput)('branch-status', 'ready');
             return branch;
         }
         console.log('branch is not ready yet, waiting...');
         await new Promise(resolve => setTimeout(resolve, backoff));
         backoff = backoff * 2;
     }
+    (0, core_1.setOutput)('branch-status', 'failed');
     throw new Error('Branch failed to be ready');
 }
 exports.waitForBranchToBeReady = waitForBranchToBeReady;
@@ -16027,19 +16021,25 @@ exports.waitForBranchToBeReady = waitForBranchToBeReady;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.waitForDeployRequestToBeReady = void 0;
+const core_1 = __nccwpck_require__(7733);
 const deployRequest_1 = __nccwpck_require__(8132);
 async function waitForDeployRequestToBeReady(props) {
     let timeout = 300000;
     let backoff = 1000;
     let start = Date.now();
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
+        const deployRequest = await (0, deployRequest_1.getDeployRequest)(props);
+        const deployRequestStatus = deployRequest.deployment_state;
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'ready') {
             console.log('deploy request is ready!');
-            return 'ready';
+            (0, core_1.setOutput)('deploy-request-state', deployRequest.state);
+            (0, core_1.setOutput)('deploy-request-deployment-state', deployRequest.deployment_state);
+            return deployRequest;
         }
         if (deployRequestStatus === 'cancelled' || deployRequestStatus === 'error') {
+            (0, core_1.setOutput)('deploy-request-state', deployRequest.state);
+            (0, core_1.setOutput)('deploy-request-deployment-state', deployRequest.deployment_state);
             throw new Error('Deploy request failed');
         }
         console.log('currently validating that these changes are safe to deploy.');
@@ -16060,17 +16060,21 @@ exports.waitForDeployRequestToBeReady = waitForDeployRequestToBeReady;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.waitForDeployRequestToComplete = void 0;
+const core_1 = __nccwpck_require__(7733);
 const deployRequest_1 = __nccwpck_require__(8132);
 async function waitForDeployRequestToComplete(props) {
     const start = Date.now();
     const timeout = 300000;
     let backoff = 1000;
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
-        console.log('deployRequestStatus => ', deployRequestStatus);
-        if (deployRequestStatus === 'complete' ||
-            deployRequestStatus === 'complete_pending_revert') {
-            return 'complete';
+        const deployRequest = await (0, deployRequest_1.getDeployRequest)(props);
+        const deploymentStatus = deployRequest.deployment_state;
+        console.log('deployRequestStatus => ', deploymentStatus);
+        if (deploymentStatus === 'complete' || deploymentStatus === 'complete_pending_revert') {
+            console.log('deploy request is complete!');
+            (0, core_1.setOutput)('deploy-request-state', deployRequest.state);
+            (0, core_1.setOutput)('deploy-request-deployment-state', deployRequest.deployment_state);
+            return deployRequest;
         }
         await new Promise(resolve => setTimeout(resolve, backoff));
         backoff = backoff * 2;
@@ -20513,6 +20517,7 @@ const actionProps = {
         Authorization: `${actionInputs.serviceTokenId}:${actionInputs.serviceToken}`,
     },
 };
+(0, core_1.setOutput)('branch-name', actionProps.branchName);
 // RUN THE ACTION
 if (actionInputs.action === 'create-branch')
     (0, createBranchAndConnectionString_1.createBranchAndConnectionString)(actionProps);

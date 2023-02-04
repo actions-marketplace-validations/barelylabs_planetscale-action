@@ -66,7 +66,7 @@ jobs:
         id: create-db-branch
         uses: ./
         with:
-          action: 'deploy'
+          action: 'create-branch'
           # overwrite-branch: true
 
       # - name: Deploy db branch to main

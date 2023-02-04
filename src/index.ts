@@ -59,7 +59,10 @@ const actionProps = {
 
 export type BranchActionProps = typeof actionProps;
 
+setOutput('branch-name', actionProps.branchName);
+
 // RUN THE ACTION
+
 if (actionInputs.action === 'create-branch') createBranchAndConnectionString(actionProps);
 if (actionInputs.action === 'open-deploy-request') openDeployRequest(actionProps);
 if (actionInputs.action === 'queue-deploy-request') queueMostRecentDeployRequest(actionProps);

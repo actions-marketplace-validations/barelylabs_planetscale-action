@@ -1,3 +1,4 @@
+import { setOutput } from '@actions/core';
 import { BranchActionProps } from '..';
 
 import {
@@ -23,9 +24,9 @@ export async function queueMostRecentDeployRequest(props: BranchActionProps) {
 		deployRequestNumber = newDeployRequest.number;
 	}
 
+	setOutput('deploy-request-number', deployRequestNumber);
+
 	await waitForDeployRequestToBeReady({ ...props, deployRequestNumber });
-
 	await queueDeployRequest({ ...props, deployRequestNumber });
-
 	await waitForDeployRequestToComplete({ ...props, deployRequestNumber });
 }

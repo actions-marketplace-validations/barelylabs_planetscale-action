@@ -29,3 +29,13 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/index.js'
+
+# outputs: 
+#   branch-name
+#   branch-status
+#   connection-string
+#   deploy-request-number 
+#   deploy-request-state
+#   deploy-request-deployment-state
+
+

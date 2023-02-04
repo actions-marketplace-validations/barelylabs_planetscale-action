@@ -5,8 +5,7 @@ import { createConnectionString } from '../endpoints/branchPassword';
 import { waitForBranchToBeReady } from './waitForBranchToBeReady';
 
 export async function createBranchAndConnectionString(props: BranchActionProps) {
-	
-  const branch = await getBranch(props);
+	const branch = await getBranch(props);
 
 	if (branch && props.overwriteBranch) {
 		console.log('deleting branch...');
@@ -20,11 +19,10 @@ export async function createBranchAndConnectionString(props: BranchActionProps) 
 
 	const branchStatus = await waitForBranchToBeReady(props);
 	console.log('branchStatus => ', branchStatus);
+	setOutput('branch-status', branchStatus);
 
 	const connectionString = await createConnectionString(props);
 	console.log('connectionString => ', connectionString);
-
-	setOutput('branch-name', props.branchName);
 	setOutput('connection-string', connectionString);
 
 	return connectionString;

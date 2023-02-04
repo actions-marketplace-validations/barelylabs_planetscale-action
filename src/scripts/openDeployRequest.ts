@@ -24,19 +24,4 @@ export async function openDeployRequest(props: BranchActionProps) {
 	setOutput('deploy-request-status', 'complete');
 
 	return newDeployRequest;
-
-	// await waitForDeployRequestToBeReady({ ...props, deployRequestNumber: newDeployRequest.number });
-
-	// const queuedDeployRequestNumber = await queueDeployRequest({
-	// 	...props,
-	// 	deployRequestNumber,
-	// });
-	// console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
-
-	// await waitForDeployRequestToComplete({
-	// 	...props,
-	// 	deployRequestNumber: queuedDeployRequestNumber,
-	// });
-
-	// console.log('deploy request complete');
 }

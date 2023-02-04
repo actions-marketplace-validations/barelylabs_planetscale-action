@@ -1,3 +1,4 @@
+import { setOutput } from '@actions/core';
 import { BranchActionProps } from '..';
 import { getBranch } from '../endpoints/branch';
 
@@ -11,11 +12,14 @@ export async function waitForBranchToBeReady(actionProps: BranchActionProps) {
 
 		if (branch?.ready) {
 			console.log('branch is ready!');
+			setOutput('branch-status', 'ready');
 			return branch;
 		}
+
 		console.log('branch is not ready yet, waiting...');
 		await new Promise(resolve => setTimeout(resolve, backoff));
 		backoff = backoff * 2;
 	}
+	setOutput('branch-status', 'failed');
 	throw new Error('Branch failed to be ready');
 }

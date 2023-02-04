@@ -1,3 +1,4 @@
+import { setOutput } from '@actions/core';
 import { BranchActionProps } from '..';
 import { getDeployRequest } from '../endpoints/deployRequest';
 
@@ -9,15 +10,20 @@ export async function waitForDeployRequestToBeReady(
 	let start = Date.now();
 
 	while (Date.now() - start < timeout) {
-		const deployRequestStatus = (await getDeployRequest(props)).deployment_state;
+		const deployRequest = await getDeployRequest(props);
+		const deployRequestStatus = deployRequest.deployment_state;
 		console.log('deployRequestStatus => ', deployRequestStatus);
 
 		if (deployRequestStatus === 'ready') {
 			console.log('deploy request is ready!');
-			return 'ready';
+			setOutput('deploy-request-state', deployRequest.state);
+			setOutput('deploy-request-deployment-state', deployRequest.deployment_state);
+			return deployRequest;
 		}
 
 		if (deployRequestStatus === 'cancelled' || deployRequestStatus === 'error') {
+			setOutput('deploy-request-state', deployRequest.state);
+			setOutput('deploy-request-deployment-state', deployRequest.deployment_state);
 			throw new Error('Deploy request failed');
 		}
 
