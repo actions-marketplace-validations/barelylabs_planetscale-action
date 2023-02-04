@@ -15526,7 +15526,7 @@ exports.NEVER = parseUtil_1.INVALID;
 
 /***/ }),
 
-/***/ 474:
+/***/ 8549:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -15534,64 +15534,22 @@ exports.NEVER = parseUtil_1.INVALID;
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core_1 = __nccwpck_require__(7733);
-const github_1 = __nccwpck_require__(3695);
+exports.deleteBranch = exports.createBranch = exports.getBranch = void 0;
 const axios_1 = __importDefault(__nccwpck_require__(7862));
-const console_1 = __nccwpck_require__(6206);
 const zod_1 = __nccwpck_require__(1460);
-const crypto_1 = __importDefault(__nccwpck_require__(6113));
-// INPUTS
-const planetscaleInputSchema = zod_1.z.object({
-    orgName: zod_1.z.string(),
-    dbName: zod_1.z.string(),
-    serviceTokenId: zod_1.z.string(),
-    serviceToken: zod_1.z.string(),
-    action: zod_1.z.enum(['create', 'deploy', 'delete']),
-    parentBranchName: zod_1.z.string(),
-    branchName: zod_1.z
-        .string()
-        .transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
-        .refine(str => str.length > 1),
-    overwriteBranch: zod_1.z.boolean(),
-});
-console.log('context.eventName => ', github_1.context.eventName);
-let branchNameInput;
-if (github_1.context.eventName === 'pull_request') {
-    branchNameInput = (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.head.ref;
-    console.log('branchNameInput for pull request => ', branchNameInput);
-}
-if (github_1.context.eventName === 'push') {
-    branchNameInput = github_1.context.payload.ref;
-    console.log('branchNameInput for push => ', branchNameInput);
-}
-console.log('getInput(overwriteBranch) => ', (0, core_1.getBooleanInput)('overwrite-branch'));
-const planetscaleInputs = planetscaleInputSchema.parse({
-    orgName: process.env.PLANETSCALE_ORG_NAME,
-    dbName: process.env.PLANETSCALE_DB_NAME,
-    serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
-    serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
-    action: (0, core_1.getInput)('action'),
-    parentBranchName: (0, core_1.getInput)('parent-branch-name') || 'main',
-    branchName: (0, core_1.getInput)('branch-name') || branchNameInput,
-    overwriteBranch: (0, core_1.getBooleanInput)('overwrite-branch'),
-});
-const { orgName, dbName, serviceTokenId, serviceToken, branchName, parentBranchName, action, overwriteBranch, } = planetscaleInputs;
-console.log('planetscaleInputs => ', planetscaleInputs);
-// API SCHEMA
 const planetscaleBranchSchema = zod_1.z.object({
     id: zod_1.z.string(),
     name: zod_1.z.string(),
     created_at: zod_1.z.string(),
     updated_at: zod_1.z.string(),
+    ready: zod_1.z.boolean(),
     // restore_checklist_completed_at: z.string().nullish(),
     // access_host_url: z.string(),
     // schema_last_updated_at: z.string(),
     // mysql_address: z.string(),
     // mysql_edge_address: z.string(),
     // initial_restore_id: z.string().nullish(),
-    ready: zod_1.z.boolean(),
     // production: z.boolean(),
     // sharded: z.boolean(),
     // shard_count: z.number(),
@@ -15626,15 +15584,74 @@ const planetscaleBranchSchema = zod_1.z.object({
     // parent_branch: z.string(),
     // multiple_admins_required_for_demotion: z.boolean(),
 });
-const planetscaleBranchStatusResponseSchema = zod_1.z.object({
-    id: zod_1.z.string(),
-    ready: zod_1.z.boolean(),
-    created_at: zod_1.z.string(),
-    updated_at: zod_1.z.string(),
-});
+async function getBranch({ orgName, dbName, branchName, headers }) {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
+    const options = { method: 'GET', url, headers };
+    const existingBranchData = await axios_1.default
+        .request(options)
+        .then(res => {
+        console.log('getBranchData => ', res.data);
+        return res.data;
+    })
+        .catch(err => {
+        if (err.response.status === 404) {
+            console.log('that branch does not exist.');
+            return null;
+        }
+        throw new Error(err.response.data.message);
+    });
+    const parsedBranchData = planetscaleBranchSchema.nullable().parse(existingBranchData);
+    // console.log('parsedBranchData => ', parsedBranchData);
+    return parsedBranchData;
+}
+exports.getBranch = getBranch;
+async function createBranch(props) {
+    const { orgName, dbName, parentBranchName, branchName, headers } = props;
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches`;
+    const data = { name: branchName, parent_branch: parentBranchName };
+    const options = { method: 'POST', url, headers, data };
+    const newBranchData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw new Error(err.response.data.message);
+    });
+    return planetscaleBranchSchema.parse(newBranchData);
+}
+exports.createBranch = createBranch;
+async function deleteBranch({ orgName, dbName, branchName, headers, }) {
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
+    const options = { method: 'DELETE', url, headers };
+    return axios_1.default
+        .request(options)
+        .then(res => console.log('branch successfully deleted'))
+        .catch(err => {
+        throw new Error(err.response.data.message);
+    });
+}
+exports.deleteBranch = deleteBranch;
+
+
+/***/ }),
+
+/***/ 1853:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createConnectionString = void 0;
+const zod_1 = __nccwpck_require__(1460);
+const crypto_1 = __importDefault(__nccwpck_require__(6113));
+const axios_1 = __importDefault(__nccwpck_require__(7862));
 const planetscaleBranchPasswordResponseSchema = zod_1.z.object({
     id: zod_1.z.string(),
     access_host_url: zod_1.z.string(),
+    username: zod_1.z.string(),
+    plain_text: zod_1.z.string(),
     // display_name: z.string(),
     // role: z.string(),
     // created_at: z.string(),
@@ -15657,7 +15674,6 @@ const planetscaleBranchPasswordResponseSchema = zod_1.z.object({
     // 		slug: z.string(),
     // 	})
     // 	.nullish(),
-    username: zod_1.z.string(),
     // renewable: z.boolean(),
     // database_branch: z.object({
     // 	name: z.string(),
@@ -15677,8 +15693,42 @@ const planetscaleBranchPasswordResponseSchema = zod_1.z.object({
     // 			.nullish(),
     // 	})
     // ),
-    plain_text: zod_1.z.string(),
 });
+async function createConnectionString(props) {
+    const { orgName, dbName, branchName, headers } = props;
+    const pwId = crypto_1.default
+        .randomUUID()
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 10);
+    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}/passwords`;
+    const data = { role: 'readwriter', name: `${branchName}-${pwId}` };
+    const options = { method: 'POST', url, headers, data };
+    const planetscalePasswordData = await axios_1.default
+        .request(options)
+        .then(res => res.data)
+        .catch(err => {
+        throw new Error(err.response.data.message);
+    });
+    const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
+    return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
+}
+exports.createConnectionString = createConnectionString;
+
+
+/***/ }),
+
+/***/ 8132:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.queueDeployRequest = exports.createDeployRequest = exports.getAllDeployRequests = exports.getDeployRequest = void 0;
+const axios_1 = __importDefault(__nccwpck_require__(7862));
+const zod_1 = __nccwpck_require__(1460);
 const planetscaleDeployRequestResponseSchema = zod_1.z.object({
     number: zod_1.z.number(),
     id: zod_1.z.string(),
@@ -15729,183 +15779,8 @@ const planetscaleDeployRequestResponseSchema = zod_1.z.object({
     // 	updated_at: z.string(),
     // }),
 });
-// const planetscaleQueueDeployRequestResponseSchema = z.object({
-// 	number: z.number(),
-// 	id: z.string(),
-// 	// actor: z.object({
-// 	// 	id: z.string(),
-// 	// 	display_name: z.string(),
-// 	// 	avatar_url: z.string(),
-// 	// }),
-// 	// closed_by: z.object({
-// 	// 	id: z.string(),
-// 	// 	display_name: z.string(),
-// 	// 	avatar_url: z.string(),
-// 	// }),
-// 	// branch: z.string(),
-// 	// branch_deleted: z.boolean(),
-// 	// branch_deleted_by: z.object({
-// 	// 	id: z.string(),
-// 	// 	display_name: z.string(),
-// 	// 	avatar_url: z.string(),
-// 	// }),
-// 	// branch_deleted_at: z.string(),
-// 	into_branch: z.string(),
-// 	// into_branch_sharded: z.boolean(),
-// 	// into_branch_shard_count: z.number(),
-// 	approved: z.boolean(),
-// 	state: z.string(),
-// 	deployment_state: z.string(),
-// 	// html_url: z.string(),
-// 	// notes: z.string(),
-// 	// html_body: z.string(),
-// 	created_at: z.string(),
-// 	updated_at: z.string(),
-// 	// closed_at: z.string(),
-// 	deployed_at: z.string(),
-// });
-const planetscaleGetDeployRequestResponseSchema = zod_1.z.object({
-    number: zod_1.z.number(),
-    id: zod_1.z.string(),
-    // actor: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    // closed_by: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    branch: zod_1.z.string(),
-    // branch_deleted: z.boolean(),
-    // branch_deleted_by: z.object({
-    // 	id: z.string(),
-    // 	display_name: z.string(),
-    // 	avatar_url: z.string(),
-    // }),
-    // branch_deleted_at: z.string(),
-    into_branch: zod_1.z.string(),
-    // into_branch_sharded: z.boolean(),
-    // into_branch_shard_count: z.number(),
-    approved: zod_1.z.boolean(),
-    state: zod_1.z.string(),
-    /* deployment_state is an enum of the following: pending ready no_changes queued submitting in_progress pending_cutover in_progress_vschema in_progress_cancel in_progress_cutover complete complete_cancel complete_error complete_pending_revert in_progress_revert complete_revert complete_revert_error cancelled error */
-    deployment_state: zod_1.z.enum([
-        'pending',
-        'ready',
-        'no_changes',
-        'queued',
-        'submitting',
-        'in_progress',
-        'pending_cutover',
-        'in_progress_vschema',
-        'in_progress_cancel',
-        'in_progress_cutover',
-        'complete',
-        'complete_cancel',
-        'complete_error',
-        'complete_pending_revert',
-        'in_progress_revert',
-        'complete_revert',
-        'complete_revert_error',
-        'cancelled',
-        'error',
-    ]),
-    // html_url: z.string(),
-    notes: zod_1.z.string().nullish(),
-    // html_body: z.string(),
-    created_at: zod_1.z.string(),
-    updated_at: zod_1.z.string(),
-    closed_at: zod_1.z.string(),
-    deployed_at: zod_1.z.string(),
-    // deployment: z.object({
-    // 	id: z.string(),
-    // 	auto_cutover: z.boolean(),
-    // 	created_at: z.string(),
-    // 	cutover_at: z.string(),
-    // 	cutover_expiring: z.boolean(),
-    // 	deploy_check_errors: z.string(),
-    // 	finished_at: z.string(),
-    // 	queued_at: z.string(),
-    // 	ready_to_cutover_at: z.string(),
-    // 	started_at: z.string(),
-    // 	state: z.string(),
-    // 	submitted_at: z.string(),
-    // 	updated_at: z.string(),
-    // }),
-});
-const headers = {
-    accept: 'application/json',
-    'content-type': 'application/json',
-    Authorization: `${serviceTokenId}:${serviceToken}`,
-};
-// API ENDPOINTS
-async function getBranch() {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
-    const options = { url, headers };
-    const existingBranchData = await axios_1.default
-        .request(options)
-        .then(res => {
-        console.log('getBranchData => ', res.data);
-        return res.data;
-    })
-        .catch(err => {
-        if (err.response.status === 404) {
-            console.log('that branch does not exist.');
-            return null;
-        }
-        throw new Error(err.response.data.message);
-    });
-    const parsedBranchData = planetscaleBranchSchema.nullable().parse(existingBranchData);
-    console.log('parsedBranchData => ', parsedBranchData);
-    return parsedBranchData;
-}
-async function createBranch() {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches`;
-    const data = { name: branchName, parent_branch: parentBranchName };
-    const options = { method: 'POST', url, headers, data };
-    const newBranchData = await axios_1.default
-        .request(options)
-        .then(res => res.data)
-        .catch(err => {
-        throw new Error(err.response.data.message);
-    });
-    return planetscaleBranchSchema.parse(newBranchData);
-}
-async function getBranchStatus() {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
-    const options = { method: 'GET', url, headers };
-    const branchStatus = await axios_1.default
-        .request(options)
-        .then(res => res.data)
-        .catch(err => {
-        if (err.response.status === 404) {
-            throw (0, console_1.error)('that branch does not exist.');
-        }
-        throw new Error(err.response.data.message);
-    });
-    return planetscaleBranchStatusResponseSchema.parse(branchStatus);
-}
-async function createConnectionString() {
-    const pwId = crypto_1.default
-        .randomUUID()
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .slice(0, 10);
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}/passwords`;
-    const data = { role: 'readwriter', name: `${branchName}-${pwId}` };
-    const options = { method: 'POST', url, headers, data };
-    const planetscalePasswordData = await axios_1.default
-        .request(options)
-        .then(res => res.data)
-        .catch(err => {
-        throw new Error(err.response.data.message);
-    });
-    const passwordData = planetscaleBranchPasswordResponseSchema.parse(planetscalePasswordData);
-    return `mysql://${passwordData.username}:${passwordData.plain_text}@${passwordData.access_host_url}/${dbName}?sslaccept=strict`;
-}
-// deploy requests
-async function getDeployRequest(deployRequestNumber) {
+async function getDeployRequest(props) {
+    const { orgName, dbName, headers, deployRequestNumber } = props;
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}`;
     const options = { method: 'GET', url, headers };
     const deployRequestData = await axios_1.default
@@ -15916,7 +15791,9 @@ async function getDeployRequest(deployRequestNumber) {
     });
     return planetscaleDeployRequestResponseSchema.parse(deployRequestData);
 }
-async function getAllDeployRequests() {
+exports.getDeployRequest = getDeployRequest;
+async function getAllDeployRequests(props) {
+    const { orgName, dbName, headers } = props;
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
     const options = { method: 'GET', url, headers };
     const deployRequestData = await axios_1.default
@@ -15929,9 +15806,10 @@ async function getAllDeployRequests() {
         .object({ data: zod_1.z.array(planetscaleDeployRequestResponseSchema) })
         .parse(deployRequestData);
     return parsedDeployRequest.data;
-    // return planetscaleQueueDeployRequestResponseSchema.parse(deployRequestData);
 }
-async function createDeployRequest() {
+exports.getAllDeployRequests = getAllDeployRequests;
+async function createDeployRequest(props) {
+    const { orgName, dbName, headers, branchName, parentBranchName } = props;
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests`;
     const data = { branch: branchName, into_branch: parentBranchName };
     const options = { method: 'POST', url, headers, data };
@@ -15943,7 +15821,9 @@ async function createDeployRequest() {
     });
     return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
-async function queueDeployRequest(deployRequestNumber) {
+exports.createDeployRequest = createDeployRequest;
+async function queueDeployRequest(props) {
+    const { orgName, dbName, headers, deployRequestNumber } = props;
     const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/deploy-requests/${deployRequestNumber}/deploy`;
     const options = { method: 'POST', url, headers };
     const deployRequestData = await axios_1.default
@@ -15954,26 +15834,97 @@ async function queueDeployRequest(deployRequestNumber) {
     });
     return planetscaleDeployRequestResponseSchema.parse(deployRequestData).number;
 }
-async function deleteBranch() {
-    const url = `https://api.planetscale.com/v1/organizations/${orgName}/databases/${dbName}/branches/${branchName}`;
-    const options = { method: 'DELETE', url, headers };
-    return axios_1.default
-        .request(options)
-        .then(res => console.log('branch successfully deleted'))
-        .catch(err => {
-        throw new Error(err.response.data.message);
-    });
+exports.queueDeployRequest = queueDeployRequest;
+
+
+/***/ }),
+
+/***/ 2407:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createBranchAndConnectionString = void 0;
+const core_1 = __nccwpck_require__(7733);
+const branch_1 = __nccwpck_require__(8549);
+const branchPassword_1 = __nccwpck_require__(1853);
+const waitForBranchToBeReady_1 = __nccwpck_require__(6493);
+async function createBranchAndConnectionString(props) {
+    const branch = await (0, branch_1.getBranch)(props);
+    if (branch && props.overwriteBranch) {
+        console.log('deleting branch...');
+        await (0, branch_1.deleteBranch)(props);
+    }
+    if (!branch || props.overwriteBranch) {
+        const newBranch = await (0, branch_1.createBranch)(props);
+        console.log('new branch => ', newBranch);
+    }
+    const branchStatus = await (0, waitForBranchToBeReady_1.waitForBranchToBeReady)(props);
+    console.log('branchStatus => ', branchStatus);
+    const connectionString = await (0, branchPassword_1.createConnectionString)(props);
+    console.log('connectionString => ', connectionString);
+    (0, core_1.setOutput)('branch-name', props.branchName);
+    (0, core_1.setOutput)('connection-string', connectionString);
+    return connectionString;
 }
-// WAITS
-async function waitForBranchToBeReady() {
+exports.createBranchAndConnectionString = createBranchAndConnectionString;
+
+
+/***/ }),
+
+/***/ 829:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.createDeployRequestAndQueue = void 0;
+const core_1 = __nccwpck_require__(7733);
+const deployRequest_1 = __nccwpck_require__(8132);
+const waitForDeployRequestSchemaCheck_1 = __nccwpck_require__(8660);
+const waitForDeployRequestToComplete_1 = __nccwpck_require__(842);
+async function createDeployRequestAndQueue(props) {
+    const deployRequestNumber = await (0, deployRequest_1.createDeployRequest)(props);
+    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
+    await (0, waitForDeployRequestSchemaCheck_1.waitForDeployRequestToBeSafe)({ ...props, deployRequestNumber });
+    const queuedDeployRequestNumber = await (0, deployRequest_1.queueDeployRequest)({
+        ...props,
+        deployRequestNumber,
+    });
+    console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
+    await (0, waitForDeployRequestToComplete_1.waitForDeployRequestToComplete)({
+        ...props,
+        deployRequestNumber: queuedDeployRequestNumber,
+    });
+    console.log('deploy request complete');
+    (0, core_1.setOutput)('branch-name', props.branchName);
+    (0, core_1.setOutput)('deploy-request-number', queuedDeployRequestNumber);
+    (0, core_1.setOutput)('deploy-request-status', 'complete');
+    return queuedDeployRequestNumber;
+}
+exports.createDeployRequestAndQueue = createDeployRequestAndQueue;
+
+
+/***/ }),
+
+/***/ 6493:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForBranchToBeReady = void 0;
+const branch_1 = __nccwpck_require__(8549);
+async function waitForBranchToBeReady(actionProps) {
     let timeout = 300000;
     let backoff = 1000;
     let start = Date.now();
     while (Date.now() - start < timeout) {
-        const branchStatus = await getBranchStatus();
-        if (branchStatus.ready) {
+        const branch = await (0, branch_1.getBranch)(actionProps);
+        if (branch === null || branch === void 0 ? void 0 : branch.ready) {
             console.log('branch is ready!');
-            return branchStatus;
+            return branch;
         }
         console.log('branch is not ready yet, waiting...');
         await new Promise(resolve => setTimeout(resolve, backoff));
@@ -15981,12 +15932,25 @@ async function waitForBranchToBeReady() {
     }
     throw new Error('Branch failed to be ready');
 }
-async function waitForDeployRequestToBeSafe(deployRequestNumber) {
+exports.waitForBranchToBeReady = waitForBranchToBeReady;
+
+
+/***/ }),
+
+/***/ 8660:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForDeployRequestToBeSafe = void 0;
+const deployRequest_1 = __nccwpck_require__(8132);
+async function waitForDeployRequestToBeSafe(props) {
     let timeout = 300000;
     let backoff = 1000;
     let start = Date.now();
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
+        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'ready') {
             console.log('deploy request is ready!');
@@ -16001,12 +15965,25 @@ async function waitForDeployRequestToBeSafe(deployRequestNumber) {
     }
     throw new Error('Deploy request failed');
 }
-async function waitForDeployRequestToComplete(deployRequestNumber) {
+exports.waitForDeployRequestToBeSafe = waitForDeployRequestToBeSafe;
+
+
+/***/ }),
+
+/***/ 842:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.waitForDeployRequestToComplete = void 0;
+const deployRequest_1 = __nccwpck_require__(8132);
+async function waitForDeployRequestToComplete(props) {
     const start = Date.now();
     const timeout = 300000;
     let backoff = 1000;
     while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await getDeployRequest(deployRequestNumber)).deployment_state;
+        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
         console.log('deployRequestStatus => ', deployRequestStatus);
         if (deployRequestStatus === 'complete' ||
             deployRequestStatus === 'complete_pending_revert') {
@@ -16017,52 +15994,7 @@ async function waitForDeployRequestToComplete(deployRequestNumber) {
     }
     throw new Error(`Deploy request failed to complete within ${timeout / 1000} seconds.`);
 }
-// GITHUB ACTIONS (COMBINED ENDPOINTS)
-async function createBranchAndConnectionString() {
-    const branch = await getBranch();
-    console.log('overwriteBranch => ', overwriteBranch);
-    if (branch && overwriteBranch) {
-        console.log('deleting branch...');
-        await deleteBranch();
-    }
-    if (!branch || overwriteBranch) {
-        const newBranch = await createBranch();
-        console.log('new branch => ', newBranch);
-    }
-    const branchStatus = await waitForBranchToBeReady();
-    console.log('branchStatus => ', branchStatus);
-    const connectionString = await createConnectionString();
-    console.log('connectionString => ', connectionString);
-    (0, core_1.setOutput)('branch-name', branchName);
-    (0, core_1.setOutput)('connection-string', connectionString);
-    return connectionString;
-}
-async function createDeployRequestAndQueue() {
-    // check if deploy request already exists for this branch
-    // const deployRequests = await getAllDeployRequests();
-    // let deployRequestNumber = deployRequests.find(req => req.branch === branchName)?.number;
-    // if (!deployRequestNumber) {
-    // FIXME: we should do this if planetscale api offers a way to query deploy requests by branch name
-    // }
-    const deployRequestNumber = await createDeployRequest();
-    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
-    await waitForDeployRequestToBeSafe(deployRequestNumber);
-    const queuedDeployRequestNumber = await queueDeployRequest(deployRequestNumber);
-    console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
-    await waitForDeployRequestToComplete(queuedDeployRequestNumber);
-    console.log('deploy request complete');
-    (0, core_1.setOutput)('branch-name', branchName);
-    (0, core_1.setOutput)('deploy-request-number', queuedDeployRequestNumber);
-    (0, core_1.setOutput)('deploy-request-status', 'complete');
-    return queuedDeployRequestNumber;
-}
-// RUN THE ACTION
-if (action === 'create')
-    createBranchAndConnectionString();
-if (action === 'deploy')
-    createDeployRequestAndQueue();
-if (action === 'delete')
-    deleteBranch();
+exports.waitForDeployRequestToComplete = waitForDeployRequestToComplete;
 
 
 /***/ }),
@@ -16088,14 +16020,6 @@ module.exports = eval("require")("encoding");
 
 "use strict";
 module.exports = require("assert");
-
-/***/ }),
-
-/***/ 6206:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("console");
 
 /***/ }),
 
@@ -20451,12 +20375,65 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(474);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+var exports = __webpack_exports__;
+
+var _a;
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const core_1 = __nccwpck_require__(7733);
+const github_1 = __nccwpck_require__(3695);
+const zod_1 = __nccwpck_require__(1460);
+const createBranchAndConnectionString_1 = __nccwpck_require__(2407);
+const createDeployRequestAndQueue_1 = __nccwpck_require__(829);
+const branch_1 = __nccwpck_require__(8549);
+// branch name
+const gitBranchName = github_1.context.eventName === 'pull_request'
+    ? (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.head.ref
+    : github_1.context.payload.ref;
+const actionInputsSchema = zod_1.z.object({
+    orgName: zod_1.z.string(),
+    dbName: zod_1.z.string(),
+    serviceTokenId: zod_1.z.string(),
+    serviceToken: zod_1.z.string(),
+    action: zod_1.z.enum(['create', 'deploy', 'delete']),
+    parentBranchName: zod_1.z.string(),
+    branchName: zod_1.z
+        .string()
+        .transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
+        .refine(str => str.length > 1),
+    overwriteBranch: zod_1.z.boolean(),
+});
+const actionInputs = actionInputsSchema.parse({
+    orgName: process.env.PLANETSCALE_ORG_NAME,
+    dbName: process.env.PLANETSCALE_DB_NAME,
+    serviceTokenId: process.env.PLANETSCALE_SERVICE_TOKEN_ID,
+    serviceToken: process.env.PLANETSCALE_SERVICE_TOKEN,
+    action: (0, core_1.getInput)('action'),
+    parentBranchName: (0, core_1.getInput)('parent-branch-name') || 'main',
+    branchName: (0, core_1.getInput)('branch-name') || gitBranchName,
+    overwriteBranch: (0, core_1.getBooleanInput)('overwrite-branch'),
+});
+const actionProps = {
+    ...actionInputs,
+    headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        Authorization: `${actionInputs.serviceTokenId}:${actionInputs.serviceToken}`,
+    },
+};
+// RUN THE ACTION
+if (actionInputs.action === 'create')
+    (0, createBranchAndConnectionString_1.createBranchAndConnectionString)(actionProps);
+if (actionInputs.action === 'deploy')
+    (0, createDeployRequestAndQueue_1.createDeployRequestAndQueue)(actionProps);
+if (actionInputs.action === 'delete')
+    (0, branch_1.deleteBranch)(actionProps);
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
