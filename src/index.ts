@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { createBranchAndConnectionString } from './scripts/createBranchAndConnectionString';
 import { createDeployRequestAndQueue } from './scripts/createDeployRequestAndQueue';
 import { deleteBranch } from './endpoints/branch';
+import { getAllDeployRequests } from './endpoints/deployRequest';
 
 // branch name
 
@@ -53,5 +54,6 @@ export type BranchActionProps = typeof actionProps;
 
 // RUN THE ACTION
 if (actionInputs.action === 'create') createBranchAndConnectionString(actionProps);
-if (actionInputs.action === 'deploy') createDeployRequestAndQueue(actionProps);
+// if (actionInputs.action === 'deploy') createDeployRequestAndQueue(actionProps);
+if (actionInputs.action === 'deploy') getAllDeployRequests(actionProps);
 if (actionInputs.action === 'delete') deleteBranch(actionProps);

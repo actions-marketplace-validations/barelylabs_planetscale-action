@@ -15802,10 +15802,11 @@ async function getAllDeployRequests(props) {
         .catch(err => {
         throw new Error(err.response.data.message);
     });
-    const parsedDeployRequest = zod_1.z
+    const deployRequests = zod_1.z
         .object({ data: zod_1.z.array(planetscaleDeployRequestResponseSchema) })
         .parse(deployRequestData);
-    return parsedDeployRequest.data;
+    console.log('allDeployRequests => ', deployRequests);
+    return deployRequests.data;
 }
 exports.getAllDeployRequests = getAllDeployRequests;
 async function createDeployRequest(props) {
@@ -15873,41 +15874,6 @@ exports.createBranchAndConnectionString = createBranchAndConnectionString;
 
 /***/ }),
 
-/***/ 829:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.createDeployRequestAndQueue = void 0;
-const core_1 = __nccwpck_require__(7733);
-const deployRequest_1 = __nccwpck_require__(8132);
-const waitForDeployRequestSchemaCheck_1 = __nccwpck_require__(8660);
-const waitForDeployRequestToComplete_1 = __nccwpck_require__(842);
-async function createDeployRequestAndQueue(props) {
-    const deployRequestNumber = await (0, deployRequest_1.createDeployRequest)(props);
-    console.log('deployRequestCreated reqNumber => ', deployRequestNumber);
-    await (0, waitForDeployRequestSchemaCheck_1.waitForDeployRequestToBeSafe)({ ...props, deployRequestNumber });
-    const queuedDeployRequestNumber = await (0, deployRequest_1.queueDeployRequest)({
-        ...props,
-        deployRequestNumber,
-    });
-    console.log('deployRequest queued to merge with main => ', queuedDeployRequestNumber);
-    await (0, waitForDeployRequestToComplete_1.waitForDeployRequestToComplete)({
-        ...props,
-        deployRequestNumber: queuedDeployRequestNumber,
-    });
-    console.log('deploy request complete');
-    (0, core_1.setOutput)('branch-name', props.branchName);
-    (0, core_1.setOutput)('deploy-request-number', queuedDeployRequestNumber);
-    (0, core_1.setOutput)('deploy-request-status', 'complete');
-    return queuedDeployRequestNumber;
-}
-exports.createDeployRequestAndQueue = createDeployRequestAndQueue;
-
-
-/***/ }),
-
 /***/ 6493:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -15933,68 +15899,6 @@ async function waitForBranchToBeReady(actionProps) {
     throw new Error('Branch failed to be ready');
 }
 exports.waitForBranchToBeReady = waitForBranchToBeReady;
-
-
-/***/ }),
-
-/***/ 8660:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.waitForDeployRequestToBeSafe = void 0;
-const deployRequest_1 = __nccwpck_require__(8132);
-async function waitForDeployRequestToBeSafe(props) {
-    let timeout = 300000;
-    let backoff = 1000;
-    let start = Date.now();
-    while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
-        console.log('deployRequestStatus => ', deployRequestStatus);
-        if (deployRequestStatus === 'ready') {
-            console.log('deploy request is ready!');
-            return 'ready';
-        }
-        if (deployRequestStatus === 'cancelled' || deployRequestStatus === 'error') {
-            throw new Error('Deploy request failed');
-        }
-        console.log('currently validating that these changes are safe to deploy.');
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        backoff = backoff * 2;
-    }
-    throw new Error('Deploy request failed');
-}
-exports.waitForDeployRequestToBeSafe = waitForDeployRequestToBeSafe;
-
-
-/***/ }),
-
-/***/ 842:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.waitForDeployRequestToComplete = void 0;
-const deployRequest_1 = __nccwpck_require__(8132);
-async function waitForDeployRequestToComplete(props) {
-    const start = Date.now();
-    const timeout = 300000;
-    let backoff = 1000;
-    while (Date.now() - start < timeout) {
-        const deployRequestStatus = (await (0, deployRequest_1.getDeployRequest)(props)).deployment_state;
-        console.log('deployRequestStatus => ', deployRequestStatus);
-        if (deployRequestStatus === 'complete' ||
-            deployRequestStatus === 'complete_pending_revert') {
-            return 'complete';
-        }
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        backoff = backoff * 2;
-    }
-    throw new Error(`Deploy request failed to complete within ${timeout / 1000} seconds.`);
-}
-exports.waitForDeployRequestToComplete = waitForDeployRequestToComplete;
 
 
 /***/ }),
@@ -20387,8 +20291,8 @@ const core_1 = __nccwpck_require__(7733);
 const github_1 = __nccwpck_require__(3695);
 const zod_1 = __nccwpck_require__(1460);
 const createBranchAndConnectionString_1 = __nccwpck_require__(2407);
-const createDeployRequestAndQueue_1 = __nccwpck_require__(829);
 const branch_1 = __nccwpck_require__(8549);
+const deployRequest_1 = __nccwpck_require__(8132);
 // branch name
 const gitBranchName = github_1.context.eventName === 'pull_request'
     ? (_a = github_1.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.head.ref
@@ -20427,8 +20331,9 @@ const actionProps = {
 // RUN THE ACTION
 if (actionInputs.action === 'create')
     (0, createBranchAndConnectionString_1.createBranchAndConnectionString)(actionProps);
+// if (actionInputs.action === 'deploy') createDeployRequestAndQueue(actionProps);
 if (actionInputs.action === 'deploy')
-    (0, createDeployRequestAndQueue_1.createDeployRequestAndQueue)(actionProps);
+    (0, deployRequest_1.getAllDeployRequests)(actionProps);
 if (actionInputs.action === 'delete')
     (0, branch_1.deleteBranch)(actionProps);
 

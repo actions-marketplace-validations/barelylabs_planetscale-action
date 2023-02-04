@@ -82,11 +82,12 @@ export async function getAllDeployRequests(props: BranchActionProps) {
 			throw new Error(err.response.data.message);
 		});
 
-	const parsedDeployRequest = z
+	const deployRequests = z
 		.object({ data: z.array(planetscaleDeployRequestResponseSchema) })
 		.parse(deployRequestData);
 
-	return parsedDeployRequest.data;
+	console.log('allDeployRequests => ', deployRequests);
+	return deployRequests.data;
 }
 
 export async function createDeployRequest(
