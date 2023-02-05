@@ -55,7 +55,7 @@ export async function getBranch({ orgName, dbName, branchName, headers }: Branch
 	const existingBranchData = await axios
 		.request(options)
 		.then(res => {
-			console.log('getBranchData => ', res.data);
+			// console.log('getBranchData => ', res.data);
 			return res.data;
 		})
 		.catch(err => {

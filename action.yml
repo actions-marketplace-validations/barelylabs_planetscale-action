@@ -1,4 +1,4 @@
-name: 'Planetscale Branch Action'
+name: 'Planetscale Action'
 
 author: 'barelylabs'
 
@@ -29,13 +29,11 @@ inputs:
 runs:
   using: 'node16'
   main: 'dist/index.js'
-
-# outputs: 
+# outputs:
 #   branch-name
 #   branch-status
 #   connection-string
-#   deploy-request-number 
+#   deploy-request-number
 #   deploy-request-state
 #   deploy-request-deployment-state
-
 
