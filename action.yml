@@ -1,4 +1,4 @@
-name: 'Planetscale Branch Action'
+name: 'Planetscale Action'
 
 author: 'barelylabs'
 
@@ -6,11 +6,11 @@ description: 'Create, deploy, or delete a Planetscale branch.'
 
 inputs:
   action:
-    description: "accepts 'create', 'deploy', or 'delete'"
+    description: "accepts 'create-branch', 'open-deploy-request', 'queue-deploy-request', or 'delete-branch'"
     type: string
     required: true
 
-  parent-branch:
+  parent-branch-name:
     description: 'The parent branch to create a new dev branch from, or merge current dev branch into. Defaults to main.'
     required: false
     type: string
@@ -24,7 +24,16 @@ inputs:
     description: 'Whether to overwrite an existing dev branch. Defaults to false.'
     required: false
     type: boolean
+    default: false
 
 runs:
   using: 'node16'
   main: 'dist/index.js'
+# outputs:
+#   branch-name
+#   branch-status
+#   connection-string
+#   deploy-request-number
+#   deploy-request-state
+#   deploy-request-deployment-state
+
