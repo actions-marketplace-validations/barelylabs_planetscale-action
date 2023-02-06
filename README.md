@@ -79,7 +79,7 @@ jobs:
 
       - name: Create db branch
         id: create-db-branch
-        uses: ./
+        uses: barelylabs/planetscale-action@v0.1.3-alpha
         with:
           action: 'create-branch'
           overwrite-existing-branch: true
@@ -96,43 +96,6 @@ jobs:
         uses: barelylabs/planetscale-action@v0.1.3-alpha
         with:
           action: 'delete-branch'
-```
-
-### Merge to main.
-
-```yaml
-# .github/workflows/ci-main.yml
-
-name: merge to main
-
-env:
-  PLANETSCALE_ORG_NAME: ${{ secrets.PLANETSCALE_ORG_NAME }}
-  PLANETSCALE_DB_NAME: ${{ secrets.PLANETSCALE_DB_NAME }}
-  PLANETSCALE_SERVICE_TOKEN: ${{ secrets.PLANETSCALE_SERVICE_TOKEN }}
-  PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  merge:
-    name: Queue Planetscale Dev Branch Deploy Request
-    runs-on: ubuntu-latest
-
-    outputs:
-      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
-      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Queue deploy request
-        id: queue-deploy-request
-        uses: barelylabs/planetscale-action@v0.1.3-alpha
-        with:
-          action: 'queue-deploy-request'
 ```
 
 ## Documentation
