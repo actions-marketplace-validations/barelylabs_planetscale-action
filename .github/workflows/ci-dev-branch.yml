@@ -12,10 +12,10 @@ on:
       - main
 
 jobs:
-  create:
+  created:
     name: Create Planetscale Dev Branch
     runs-on: ubuntu-latest
-    if: ${{ github.event.create }}
+    if: ${{ github.event.created }}
     outputs:
       branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
       connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
@@ -28,4 +28,16 @@ jobs:
         uses: ./
         with:
           action: 'create-branch'
-          overwrite-branch: true
+          overwrite-existing-branch: true
+
+  deleted:
+    name: Delete Planetscale Dev Branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.deleted }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Delete db branch
+        uses: ./
+        with:
+          action: 'delete-branch'

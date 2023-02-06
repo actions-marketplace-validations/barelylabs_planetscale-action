@@ -11,7 +11,7 @@ declare const actionProps: {
     action: "create-branch" | "open-deploy-request" | "queue-deploy-request" | "delete-branch";
     parentBranchName: string;
     branchName: string;
-    overwriteBranch: boolean;
+    overwriteExistingBranch: boolean;
 };
 export type BranchActionProps = typeof actionProps;
 export {};
