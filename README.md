@@ -6,18 +6,58 @@ Uses the [PlanetScale API](https://api-docs.planetscale.com/reference/getting-st
 
 ## Usage
 
-Create a GitHub Action Workflow file in your repository following one of these examples.
+Create a GitHub Action Workflow file in your repository. Here are a few example workflows:
 
-### Standalone
+### Dev branch created or deleted
 
 ```yaml
-# .github/workflows/preview.yml
+# .github/workflows/ci-dev-branch.yml
 
-name: Preview Environment
+name: Dev branch created or deleted
 
 env:
-  VERCEL_ACCESS_TOKEN: ${{ secrets.VERCEL_ACCESS_TOKEN }}
-  VERCEL_PROJECT_ID: <YOUR_VERCEL_PROJECT_ID>
+  PLANETSCALE_ORG_NAME: ${{ secrets.PLANETSCALE_ORG_NAME }}
+  PLANETSCALE_DB_NAME: ${{ secrets.PLANETSCALE_DB_NAME }}
+  PLANETSCALE_SERVICE_TOKEN: ${{ secrets.PLANETSCALE_SERVICE_TOKEN }}
+  PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  create:
+    name: Create Planetscale Dev Branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.create }}
+    outputs:
+      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create db branch
+        id: create-db-branch
+        uses: barelylabs/planetscale-action@v0.1.3-alpha
+        with:
+          action: 'create-branch'
+          overwrite-existing-branch: true
+```
+
+### Pull request opened/synced or closed.
+
+```yaml
+# .github/workflows/ci-pr.yml
+
+name: pull request opened/synced or closed.
+
+env:
+  PLANETSCALE_ORG_NAME: ${{ secrets.PLANETSCALE_ORG_NAME }}
+  PLANETSCALE_DB_NAME: ${{ secrets.PLANETSCALE_DB_NAME }}
+  PLANETSCALE_SERVICE_TOKEN: ${{ secrets.PLANETSCALE_SERVICE_TOKEN }}
+  PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
 
 on:
   pull_request:
@@ -26,18 +66,73 @@ on:
       - main
 
 jobs:
-  deploy:
+  open:
+    name: Create Planetscale Dev Branch
+    runs-on: ubuntu-latest
     if: ${{ github.event.action == 'opened' || github.event.action == 'synchronize' }}
-    runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
     steps:
-      - uses: snaplet/vercel-action@v2
-  delete:
-    if: ${{ github.event.action == 'closed' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: snaplet/vercel-action@v2
+      - uses: actions/checkout@v3
+
+      - name: Create db branch
+        id: create-db-branch
+        uses: ./
         with:
-          delete: true
+          action: 'create-branch'
+          overwrite-existing-branch: true
+
+  close:
+    name: Delete Planetscale Dev Branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.action == 'closed'  }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Delete db branch
+        uses: barelylabs/planetscale-action@v0.1.3-alpha
+        with:
+          action: 'delete-branch'
+```
+
+### Merge to main.
+
+```yaml
+# .github/workflows/ci-main.yml
+
+name: merge to main
+
+env:
+  PLANETSCALE_ORG_NAME: ${{ secrets.PLANETSCALE_ORG_NAME }}
+  PLANETSCALE_DB_NAME: ${{ secrets.PLANETSCALE_DB_NAME }}
+  PLANETSCALE_SERVICE_TOKEN: ${{ secrets.PLANETSCALE_SERVICE_TOKEN }}
+  PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  merge:
+    name: Queue Planetscale Dev Branch Deploy Request
+    runs-on: ubuntu-latest
+
+    outputs:
+      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Queue deploy request
+        id: queue-deploy-request
+        uses: barelylabs/planetscale-action@v0.1.3-alpha
+        with:
+          action: 'queue-deploy-request'
 ```
 
 ## Documentation
