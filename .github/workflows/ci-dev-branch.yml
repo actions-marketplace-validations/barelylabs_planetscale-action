@@ -28,4 +28,4 @@ jobs:
         uses: ./
         with:
           action: 'create-branch'
-          overwrite-branch: true
+          overwrite-existing-branch: true
