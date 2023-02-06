@@ -33,7 +33,7 @@ const actionInputsSchema = z.object({
 		.string()
 		.transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
 		.refine(str => str.length > 1),
-	overwriteBranch: z.boolean(),
+	overwriteExistingBranch: z.boolean(),
 });
 
 const actionInputs = actionInputsSchema.parse({

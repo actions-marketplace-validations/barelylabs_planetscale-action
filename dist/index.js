@@ -15873,11 +15873,11 @@ const branchPassword_1 = __nccwpck_require__(1853);
 const waitForBranchToBeReady_1 = __nccwpck_require__(6493);
 async function createBranchAndConnectionString(props) {
     const branch = await (0, branch_1.getBranch)(props);
-    if (branch && props.overwriteBranch) {
+    if (branch && props.overwriteExistingBranch) {
         console.log('deleting branch...');
         await (0, branch_1.deleteBranch)(props);
     }
-    if (!branch || props.overwriteBranch) {
+    if (!branch || props.overwriteExistingBranch) {
         const newBranch = await (0, branch_1.createBranch)(props);
         console.log('new branch => ', newBranch);
     }
@@ -20497,7 +20497,7 @@ const actionInputsSchema = zod_1.z.object({
         .string()
         .transform(str => str.replace(/[^a-zA-Z0-9-]/g, '-'))
         .refine(str => str.length > 1),
-    overwriteBranch: zod_1.z.boolean(),
+    overwriteExistingBranch: zod_1.z.boolean(),
 });
 const actionInputs = actionInputsSchema.parse({
     orgName: process.env.PLANETSCALE_ORG_NAME,

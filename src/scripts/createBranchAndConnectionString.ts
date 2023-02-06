@@ -7,12 +7,12 @@ import { waitForBranchToBeReady } from './waitForBranchToBeReady';
 export async function createBranchAndConnectionString(props: BranchActionProps) {
 	const branch = await getBranch(props);
 
-	if (branch && props.overwriteBranch) {
+	if (branch && props.overwriteExistingBranch) {
 		console.log('deleting branch...');
 		await deleteBranch(props);
 	}
 
-	if (!branch || props.overwriteBranch) {
+	if (!branch || props.overwriteExistingBranch) {
 		const newBranch = await createBranch(props);
 		console.log('new branch => ', newBranch);
 	}
