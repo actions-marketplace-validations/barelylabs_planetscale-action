@@ -45,7 +45,7 @@ const actionInputs = actionInputsSchema.parse({
 	action: getInput('action'),
 	parentBranchName: getInput('parent-branch-name') || 'main',
 	branchName: getInput('branch-name') || gitBranchName,
-	overwriteBranch: getBooleanInput('overwrite-branch'),
+	overwriteExistingBranch: getBooleanInput('overwrite-existing-branch'),
 });
 
 const actionProps = {

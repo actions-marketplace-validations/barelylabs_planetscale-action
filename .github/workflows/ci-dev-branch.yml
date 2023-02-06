@@ -1,0 +1,31 @@
+name: dev branch created or deleted
+
+env:
+  PLANETSCALE_ORG_NAME: ${{ secrets.PLANETSCALE_ORG_NAME }}
+  PLANETSCALE_DB_NAME: ${{ secrets.PLANETSCALE_DB_NAME }}
+  PLANETSCALE_SERVICE_TOKEN: ${{ secrets.PLANETSCALE_SERVICE_TOKEN }}
+  PLANETSCALE_SERVICE_TOKEN_ID: ${{ secrets.PLANETSCALE_SERVICE_TOKEN_ID }}
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  create:
+    name: Create Planetscale Dev Branch
+    runs-on: ubuntu-latest
+    if: ${{ github.event.create }}
+    outputs:
+      branch-name: ${{ steps.create-db-branch.outputs.branch-name }}
+      connection-string: ${{ steps.create-db-branch.outputs.connection-string }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create db branch
+        id: create-db-branch
+        uses: ./
+        with:
+          action: 'create-branch'
+          overwrite-branch: true
