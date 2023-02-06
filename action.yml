@@ -29,29 +29,22 @@ inputs:
 outputs:
   branch-name:
     description: 'The name of the dev branch.'
-    value: { { job.outputs.branch-name } }
 
   branch-status:
     description: 'The status of the dev branch.'
-    value: { { job.outputs.branch-status } }
 
   connection-string:
     description: 'The connection string for the dev branch.'
-    value: { { job.outputs.connection-string } }
 
   deploy-request-number:
     description: 'The number of the deploy request.'
-    value: { { job.outputs.deploy-request-number } }
 
   deploy-request-state:
     description: 'The state of the deploy request.'
-    value: { { job.outputs.deploy-request-state } }
 
   deploy-request-deployment-state:
     description: 'The deployment state of the deploy request.'
-    value: { { job.outputs.deploy-request-deployment-state } }
 
 runs:
-  name: PlanetScale Action
   using: 'node16'
   main: 'dist/index.js'

@@ -23,8 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Create db branch
-        id: create-db-branch
+      - name: Queue deploy request
+        id: queue-deploy-request
         uses: ./
         with:
           action: 'queue-deploy-request'
